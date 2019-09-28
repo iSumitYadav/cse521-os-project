@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include<list.h>
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -29,6 +30,8 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
+
+#define thread_sleep_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux) list_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux)
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
