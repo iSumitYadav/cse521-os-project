@@ -30,26 +30,48 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+
+	1. int64_t wakeup_ticks;		// NEW_STRUCT_MEMBER of struct thread
+		Wakeup_ticks needs to be calculated based on the current system ticks and the number of ticks for which the thread is sleeping.
+
+	2. struct sema t_sema;			// NEW_STRUCT_MEMBER of struct thread
+		The t_sema semaphore of a thread will help us maintain synchronization of multiple threads.
+
+	3. #define thread_sleep_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux) list_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux)
+		We will define a new function thread_sleep_insert_ordered which us derived from list_insert_ordered
+
+
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe what happens in a call to timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
+	timer_sleep() will be modified to remove busy waiting by calculating the wake_up_ticks of the calling thread and pushing it to a sleeping thread list which is sorted on wake_up_ticks, as timer_interrupt() is called on every ticks we can check there if any thread in the sleeping list needs to wake up, if the waking time of the thread has come, it'll be waken uo and removed from list
+
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
+
+
 
 ---- SYNCHRONIZATION ----
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
+	Semaphore will be used to avoid race condition between multiple thread calls to timer_sleep()
+
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+	We can disable interrupts for a small span of time and then enable them again.
+
 
 ---- RATIONALE ----
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+	We've removed busy waiting from timer_sleep() which was wasting the cpu by doing nothing, we've used sorted list based on wake_up_ticks of the threads and waking them up in timer_interrupt() which already runs on every ticks of the system, and it is optimized by checking only the threads whose waking up ticks has alrady passed.
+
 
 			 PRIORITY SCHEDULING
 			 ===================
