@@ -58,6 +58,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
+
 	sorted list based on ascending wakeup_ticks order is used to save the thread which needs to be waken up their wake up ticks, so for every tick it is checked whether a thread(s) needs to be waken up, instead of checking the full unordered list.
 
 
@@ -66,11 +67,13 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
+
 	Semaphore will be used to avoid race condition between multiple thread calls to timer_sleep()
 
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
 	Semaphore will be used to avoid race condition even if an interrupt occurs during a call to timer_sleep()
 
 
@@ -78,6 +81,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
 	We've removed busy waiting from timer_sleep() which was wasting the cpu by doing nothing, we've used sorted list based on wakeup_ticks of the threads and waking them up in timer_interrupt() which already runs on every ticks of the system, and it is optimized by checking only the threads whose waking up ticks has alrady passed. Before this, we thought of an unordered list maintaining sleeping threads, but that needs to be iterated fully on every tick inside timer_interrupt().
 
 
@@ -98,19 +102,24 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
-	Whenever a thread waits for acquiring a particular lock, we encounter two possibilities- lock is free or lock is acquired by other thread.
+
+	Whenever a thread waits for acquiring a particular lock, we encounter two possibilities:
+		- lock is free or
+		- lock is acquired by other thread.
+
 	If lock is held by a currently running thread we add the requesting thread to priority based waiting queue which sorts the threads based on their priority and as soon as the lock is availabe the head from this queue is popped and provided with the lock.
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
-	When a thread calls lock_acquire(), again two posibilities are to be addressed- if lock is free then it can be directly acquired by the requesting
-	thread, if the lock is already acquired by a thread and a new thread is requesting lock with higher priority then the priority of current thread is saved in a variable and the priority of requesting thread is copied. This ensures that current thread finishes execution and releases lock which
-	is then acquired by requesting thread, which then finishes execution thereby succesfully implementing priority donation.
+
+	When a thread calls lock_acquire(), again two posibilities needs to be addressed:
+		- if lock is free then it can be directly acquired by the requesting thread or
+		- if the lock is already acquired by a thread and a new thread is requesting lock with higher priority then the priority of current thread is saved in a variable and the priority of requesting thread is copied. This ensures that current thread finishes execution and releases the lock which is then acquired by requesting thread, which then finishes execution, thereby succesfully implementing priority donation.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
-	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all
-	threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread with highest priority in the list of its priority donated threads. Then the priority of current thread is set with the maximum priority in its donated list.
+
+	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all the threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread with highest priority in the list of its priority donated threads. Then the priority of current thread is set with the maximum priority in its donated list.
 
 ---- SYNCHRONIZATION ----
 
@@ -137,7 +146,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 	===========
 
 	1. int nice;					// NEW MEMBER of struct thread
-		nice value of a particular thread, can be range b/w +20 to -20, a positive value denotes it can give up some of its CPU time, while a -ve value denotes 
+		nice value of a particular thread, can be ranged b/w +20 to -20, a positive value denotes it can give up some of its CPU time, while a -ve value denotes it fetches cpu time from other threads
 
 	2. int recent_cpu;				// NEW MEMBER of struct thread
 		denotes the CPU time the thread got recently
@@ -180,6 +189,7 @@ ticks   A   B   C   	A   B   C   	to run
 
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
+
 	We haven't reached to this point of the project yet.
 
 ---- RATIONALE ----
@@ -188,6 +198,7 @@ ticks   A   B   C   	A   B   C   	to run
 >> disadvantages in your design choices.  If you were to have extra
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
+
 	We haven't reached to this point of the project yet.
 
 >> C6: The assignment explains arithmetic for fixed-point math in
@@ -196,6 +207,7 @@ ticks   A   B   C   	A   B   C   	to run
 >> abstraction layer for fixed-point math, that is, an abstract data
 >> type and/or a set of functions or macros to manipulate fixed-point
 >> numbers, why did you do so?  If not, why not?
+
 	We haven't reached to this point of the project yet.
 
 			   SURVEY QUESTIONS
