@@ -30,13 +30,22 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-	1. int64_t wakeup_ticks;		// NEW MEMBER of struct thread
+	===========
+	in thread.h
+	===========
+
+	1. int64_t wakeup_ticks;								// NEW MEMBER of struct thread
 		Wakeup_ticks needs to be calculated based on the current system ticks and the number of ticks for which the thread is sleeping.
 
-	2. struct sema t_sema;			// NEW MEMBER of struct thread
+	2. struct sema t_sema;									// NEW MEMBER of struct thread
 		The t_sema semaphore of a thread will help us maintain synchronization of multiple threads.
 
-	3. struct list thread_sleep_insert_ordered;
+
+	===========
+	in thread.c
+	===========
+
+	1. static struct list thread_sleep_insert_ordered;		// NEW MEMBER of struct thread
 		We will define a new list thread_sleep_insert_ordered which is used to sort threads in increasing order of wakeup ticks.
 
 
@@ -62,7 +71,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
-	We can disable interrupts for a small span of time and then enable them again.
+	Semaphore will be used to avoid race condition even if an interrupt occurs during a call to timer_sleep()
 
 
 ---- RATIONALE ----
@@ -116,6 +125,25 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+	===========
+	in thread.h
+	===========
+
+	1. int nice;					// NEW MEMBER of struct thread
+		nice value of a particular thread, can be range b/w +20 to -20, a positive value denotes it can give up some of its CPU time, while a -ve value denotes 
+
+	2. int recent_cpu;				// NEW MEMBER of struct thread
+		denotes the CPU time the thread got recently
+
+
+	===========
+	in thread.c
+	===========
+
+	1. static int load_avg;
+		gives an estimate of average number of threads ready to run over the past minute.
+
+
 ---- ALGORITHMS ----
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -123,23 +151,25 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> scheduling decision and the priority and recent_cpu values for each
 >> thread after each given number of timer ticks:
 
-timer  recent_cpu    priority   thread
-ticks   A   B   C   A   B   C   to run
------  --  --  --  --  --  --   ------
- 0
- 4
- 8
-12
-16
-20
-24
-28
-32
-36
+timer  	recent_cpu    	priority   		thread
+ticks   A   B   C   	A   B   C   	to run
+-----  	--  --  --  	--  --  --   	------
+ 0		0	0	0		63	61	59		A
+ 4		4	0	0		62	61	59		A
+ 8		8	0	0		61	61	59		B
+12		8	4	0		61	60	59		A
+16		12	4	0		60	60	59		B
+20		12	8	0		60	59	59		C
+24		12	8	4		60	59	58		A
+28		16	8	4		59	59	58		B
+32		16	12	4		59	58	58		A
+36		20	12	4		58	58	58		C
 
 >> C3: Did any ambiguities in the scheduler specification make values
 >> in the table uncertain?  If so, what rule did you use to resolve
 >> them?  Does this match the behavior of your scheduler?
+
+	Yes, it is not specified what has to be done in case if more than 1 threads has same priority. In our case, we have chosen to FALLBACK to FCFS if 2 or more threads are having the same priority.
 
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
