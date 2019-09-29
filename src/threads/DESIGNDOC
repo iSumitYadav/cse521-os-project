@@ -98,12 +98,19 @@ Christopher Sam Roy <croy2@buffalo.edu>
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
+	Whenever a thread waits for acquiring a particular lock, we encounter two possibilities- lock is free or lock is acquired by other thread.
+	If lock is held by a currently running thread we add the requesting thread to priority based waiting queue which sorts the threads based on their priority and as soon as the lock is availabe the head from this queue is popped and provided with the lock.
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
+	When a thread calls lock_acquire(), again two posibilities are to be addressed- if lock is free then it can be directly acquired by the requesting
+	thread, if the lock is already acquired by a thread and a new thread is requesting lock with higher priority then the priority of current thread is saved in a variable and the priority of requesting thread is copied. This ensures that current thread finishes execution and releases lock which
+	is then acquired by requesting thread, which then finishes execution thereby succesfully implementing priority donation.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
+	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all
+	threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread with highest priority in the list of its priority donated threads. Then the priority of current thread is set with the maximum priority in its donated list.
 
 ---- SYNCHRONIZATION ----
 
