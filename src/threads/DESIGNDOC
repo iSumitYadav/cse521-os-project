@@ -173,6 +173,7 @@ ticks   A   B   C   	A   B   C   	to run
 
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
+	We haven't reached to this point of the project yet.
 
 ---- RATIONALE ----
 
@@ -180,6 +181,7 @@ ticks   A   B   C   	A   B   C   	to run
 >> disadvantages in your design choices.  If you were to have extra
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
+	We haven't reached to this point of the project yet.
 
 >> C6: The assignment explains arithmetic for fixed-point math in
 >> detail, but it leaves it open to you to implement it.  Why did you
@@ -187,6 +189,7 @@ ticks   A   B   C   	A   B   C   	to run
 >> abstraction layer for fixed-point math, that is, an abstract data
 >> type and/or a set of functions or macros to manipulate fixed-point
 >> numbers, why did you do so?  If not, why not?
+	We haven't reached to this point of the project yet.
 
 			   SURVEY QUESTIONS
 			   ================
