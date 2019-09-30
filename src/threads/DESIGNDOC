@@ -101,8 +101,11 @@ Christopher Sam Roy <croy2@buffalo.edu>
 		1. int initial_proirity;		// NEW MEMBER of struct thread
 			used to store the original priority of the thread, useful when we have to revert back to original priority after priority donation
 
-		2. struct list locks_held	// NEW MEMBER of struct thread
-			the locks held by the thread are maintatined in the locks_held list
+		2. struct list priority_donated	// NEW MEMBER of struct thread
+			it holds the list of all the threads to whom the current thread has donated its priority.
+
+		3. struct thread *lock_by    
+			used to store the tid of thread who has acquired a lock on this thread
 
 
 >> B2: Explain the data structure used to track priority donation.
@@ -130,7 +133,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
-	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all the threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread with highest priority in the list of its priority donated threads. Then the priority of current thread is set with the maximum priority in its donated list.
+	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all the threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread whose priority this thread has acquired using the list of priority donated threads. Then the priority of current thread is set to its original priority and we monitor the lock of the thread we found from the list of priority donated threads.
 
 ---- SYNCHRONIZATION ----
 
