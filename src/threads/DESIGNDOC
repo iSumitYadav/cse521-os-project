@@ -94,6 +94,17 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+	===========
+	in thread.h
+	===========
+
+		1. int initial_proirity;		// NEW MEMBER of struct thread
+			used to store the original priority of the thread, useful when we have to revert back to original priority after priority donation
+
+		2. struct list locks_held	// NEW MEMBER of struct thread
+			the locks held by the thread are maintatined in the locks_held list
+
+
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
