@@ -98,14 +98,11 @@ Christopher Sam Roy <croy2@buffalo.edu>
 	in thread.h
 	===========
 
-		1. int initial_proirity;		// NEW MEMBER of struct thread
+		1. int initial_proirity;			// NEW MEMBER of struct thread
 			used to store the original priority of the thread, useful when we have to revert back to original priority after priority donation
 
-		2. struct list priority_donated	// NEW MEMBER of struct thread
+		2. struct list priority_donated;	// NEW MEMBER of struct thread
 			it holds the list of all the threads to whom the current thread has donated its priority.
-
-		3. struct thread *lock_by    
-			used to store the tid of thread who has acquired a lock on this thread
 
 
 >> B2: Explain the data structure used to track priority donation.
