@@ -109,6 +109,19 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
 
+
+	+-------+						+-------+						+-------+
+	|		|		+------+		|		|		+------+		|		|
+	|	H	|------>|Lock 1|------->|	M	|------>|Lock 2|------->|	L	|
+	|		|		+------+		|		|		+------+		|		|
+	+-------+						+-------+						+-------+
+
+	**the arrows towards lock represents thread requesting for that particular lock, and arrow towards thread represents lock acquired by the thread.
+
+
+	We are thinking of developing priority donations using pointers, where a pointer will be used to point to the lock requesting by the thread, and a pointer which points towards the thread which is currently acquired by the thread.
+
+
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
@@ -138,10 +151,14 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
+	We haven't closed on the design yet, we're currently in the idea building phase
+
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
+	We haven't closed on the design yet, we're currently in the idea building phase
 
 			  ADVANCED SCHEDULER
 			  ==================
