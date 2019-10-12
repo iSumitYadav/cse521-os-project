@@ -95,11 +95,16 @@ timer_sleep (int64_t ticks)
   // helps us pass alarm-negative and alarm-zero test cases
   if (ticks <= 0)
     return;
+
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  // while (timer_elapsed (start) < ticks)
+  //  thread_yield ();
+  struct thread * current_thread = thread_current();
+
+  current_thread->wakeup_ticks = start + ticks;
+  list_insert_ordered(thread_sleep_insert_ordered, current_thread->elem, value_less, current_thread->wakeup_ticks);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

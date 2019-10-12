@@ -56,6 +56,16 @@ is_tail (struct list_elem *elem)
   return elem != NULL && elem->prev != NULL && elem->next == NULL;
 }
 
+// Though it's already present in src/tests/internal/list.c
+/* Returns true if value A is less than value B, false
+   otherwise. */
+static bool value_less(const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED){
+  const struct value *a = list_entry (a_, struct value, elem);
+  const struct value *b = list_entry (b_, struct value, elem);
+
+  return a->value < b->value;
+}
+
 /* Initializes LIST as an empty list. */
 void
 list_init (struct list *list)
