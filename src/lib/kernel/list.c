@@ -522,3 +522,15 @@ list_min (struct list *list, list_less_func *less, void *aux)
     }
   return min;
 }
+
+// // Though it's already present in src/tests/internal/list.c
+// /* Returns true if value A is less than value B, false
+//    otherwise. */
+// static bool value_less(const struct list_elem *a_, const struct list_elem *b_, void *aux compare_on){
+//   const struct thread *a = list_entry (a_, struct thread, elem_ptr);
+//   const struct thread *b = list_entry (b_, struct thread, elem_ptr);
+
+//   if(comapre_on == "wakeup_ticks"){
+//     return a->wakeup_ticks < b->wakeup_ticks;
+//   }
+// }

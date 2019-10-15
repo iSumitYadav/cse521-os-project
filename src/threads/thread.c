@@ -214,10 +214,13 @@ void
 thread_block (void) 
 {
   ASSERT (!intr_context ());
+  enum intr_level old_level;
+  old_level = intr_disable ();
   ASSERT (intr_get_level () == INTR_OFF);
 
   thread_current ()->status = THREAD_BLOCKED;
   schedule ();
+  intr_set_level (old_level);
 }
 
 /* Transitions a blocked thread T to the ready-to-run state.

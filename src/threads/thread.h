@@ -93,6 +93,7 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     int64_t wakeup_ticks;               // Number of ticks that should pass before waking up the thread from sleep
+    struct list_elem elem_ptr;
     // struct sema t_sema;
 
 #ifdef USERPROG

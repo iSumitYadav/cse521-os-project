@@ -19,7 +19,6 @@
 #endif
 
 /* Number of timer ticks since OS booted. */
-static int64_t ticks;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -31,7 +30,21 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
-#define thread_sleep_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux) list_insert_ordered(struct list *list, struct list_elem *elem, list_less_func *less, void *aux)
+
+static int64_t ticks;
+struct semaphore t_sema;
+static struct list thread_sleep_insert_ordered;
+
+// Though it's already present in src/tests/internal/list.c
+/* Returns true if value A is less than value B, false
+   otherwise. */
+static bool value_less(const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED){
+  const struct thread *a = list_entry (a_, struct thread, elem_ptr);
+  const struct thread *b = list_entry (b_, struct thread, elem_ptr);
+
+  return a->wakeup_ticks < b->wakeup_ticks;
+}
+
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -40,6 +53,8 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&thread_sleep_insert_ordered);
+  sema_init(&t_sema, 1);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -95,11 +110,23 @@ timer_sleep (int64_t ticks)
   // helps us pass alarm-negative and alarm-zero test cases
   if (ticks <= 0)
     return;
+
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  // while (timer_elapsed (start) < ticks)
+  //  thread_yield ();
+
+  struct thread * current_thread = thread_current();
+  current_thread->wakeup_ticks = start + ticks;
+
+  sema_down(&t_sema);
+  list_insert_ordered(&thread_sleep_insert_ordered, &current_thread->elem_ptr, value_less, NULL);
+  sema_up(&t_sema);
+  //enum intr_level old_level;
+  //old_level = intr_disable ();
+  thread_block();
+  //intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -171,13 +198,33 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  struct list_elem *front_elem_ptr;
+  struct thread *front_thread_ptr;
+
+  if(!list_empty(&thread_sleep_insert_ordered)){
+    front_elem_ptr = list_front(&thread_sleep_insert_ordered);
+    front_thread_ptr = list_entry(front_elem_ptr, struct thread, elem_ptr);
+
+    while(front_thread_ptr->wakeup_ticks <= ticks){
+        thread_unblock(front_thread_ptr);
+        list_pop_front(&thread_sleep_insert_ordered);
+
+        if(list_empty(&thread_sleep_insert_ordered)){
+            break;
+        }
+
+        front_elem_ptr = list_front(&thread_sleep_insert_ordered);
+        front_thread_ptr = list_entry(front_elem_ptr, struct thread, elem_ptr);
+    }
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
