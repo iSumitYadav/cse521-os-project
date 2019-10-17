@@ -38,11 +38,37 @@ static struct list thread_sleep_insert_ordered;
 // Though it's already present in src/tests/internal/list.c
 /* Returns true if value A is less than value B, false
    otherwise. */
-static bool value_less(const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED){
+static bool value_less(const struct list_elem *a_, const struct list_elem *b_, void *aux){
   const struct thread *a = list_entry (a_, struct thread, elem_ptr);
   const struct thread *b = list_entry (b_, struct thread, elem_ptr);
 
+  // return a->wakeup_ticks < b->wakeup_ticks;
+  // return a->priority > b->priority;
+if(a->wakeup_ticks != b->wakeup_ticks){
   return a->wakeup_ticks < b->wakeup_ticks;
+}else{
+  return a->priority > b->priority;
+}
+
+// if(a->priority != b->priority){
+//   return a->priority > b->priority;
+// }else{
+//   return a->wakeup_ticks < b->wakeup_ticks;
+// }
+
+  // if(a->priority < b->priority){
+  //   return false;
+  // }else if(a->priority > b->priority){
+  //   return true;
+  // }else{
+  //   return a->wakeup_ticks < b->wakeup_ticks;
+  // }
+
+  // if(aux == "wakeup_ticks"){
+  //   return a->wakeup_ticks < b->wakeup_ticks;
+  // }else if(aux == "priority"){
+  //   return a->priority > b->priority;
+  // }
 }
 
 
@@ -119,9 +145,13 @@ timer_sleep (int64_t ticks)
 
   struct thread * current_thread = thread_current();
   current_thread->wakeup_ticks = start + ticks;
+  printf("\n\n==================\n\n");
+  printf("Ticks:%d\n", current_thread->wakeup_ticks);
+  printf("PRIO:%d\n", current_thread->priority);
+  printf("\n\n==================\n\n");
 
   sema_down(&t_sema);
-  list_insert_ordered(&thread_sleep_insert_ordered, &current_thread->elem_ptr, value_less, NULL);
+  list_insert_ordered(&thread_sleep_insert_ordered, &current_thread->elem_ptr, value_less, "wakeup_ticks");
   sema_up(&t_sema);
   //enum intr_level old_level;
   //old_level = intr_disable ();
