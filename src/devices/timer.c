@@ -133,7 +133,7 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  // helps us pass alarm-negative and alarm-zero test cases
+  // return if ticks to sleep are zero or negative
   if (ticks <= 0)
     return;
 
@@ -143,16 +143,22 @@ timer_sleep (int64_t ticks)
   // while (timer_elapsed (start) < ticks)
   //  thread_yield ();
 
+  // pointer to currebt running thread
   struct thread * current_thread = thread_current();
+  //add the sleeping ticks to current system ticks, so that it can be used at the time of wakeup and minimizes calculations in timer interrupt
   current_thread->wakeup_ticks = start + ticks;
-  printf("\n\n==================\n\n");
-  printf("Ticks:%d\n", current_thread->wakeup_ticks);
-  printf("PRIO:%d\n", current_thread->priority);
-  printf("\n\n==================\n\n");
+  // printf("\n\n==================\n\n");
+  // printf("Ticks:%d\n", current_thread->wakeup_ticks);
+  // printf("PRIO:%d\n", current_thread->priority);
+  // printf("\n\n==================\n\n");
 
+  // call sema down
   sema_down(&t_sema);
+  // insert in thread sleeping list, ordered by ascending wakeup ticks
   list_insert_ordered(&thread_sleep_insert_ordered, &current_thread->elem_ptr, value_less, "wakeup_ticks");
+  // call sema up
   sema_up(&t_sema);
+
   //enum intr_level old_level;
   //old_level = intr_disable ();
   thread_block();
@@ -236,23 +242,36 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
-  struct list_elem *front_elem_ptr;
+  // pointer to a thread (used for pointing to front thread of sleeping list)
   struct thread *front_thread_ptr;
 
+  // execute this block only if the thread sleeping list is not empty
   if(!list_empty(&thread_sleep_insert_ordered)){
-    front_elem_ptr = list_front(&thread_sleep_insert_ordered);
-    front_thread_ptr = list_entry(front_elem_ptr, struct thread, elem_ptr);
+    // get the pointer to the first thread in thread sleeping list
+    front_thread_ptr = list_entry(
+      list_front(&thread_sleep_insert_ordered),
+      struct thread,
+      elem_ptr
+    );
+
 
     while(front_thread_ptr->wakeup_ticks <= ticks){
-        thread_unblock(front_thread_ptr);
-        list_pop_front(&thread_sleep_insert_ordered);
+      // unblock the thread pointed by the front_thread_ptr (the first thread is sleeping thread list)
+      thread_unblock(front_thread_ptr);
+      // remove the unblocked thread from sleeping list
+      list_pop_front(&thread_sleep_insert_ordered);
 
-        if(list_empty(&thread_sleep_insert_ordered)){
-            break;
-        }
+      // if after popping the thread out of the list, the list gets empty, check for it and break the loop
+      if(list_empty(&thread_sleep_insert_ordered)){
+          break;
+      }
 
-        front_elem_ptr = list_front(&thread_sleep_insert_ordered);
-        front_thread_ptr = list_entry(front_elem_ptr, struct thread, elem_ptr);
+      // check if there are still some sleeping threads in the thread sleeping list and awake them as well
+      front_thread_ptr = list_entry(
+        list_front(&thread_sleep_insert_ordered),
+        struct thread,
+        elem_ptr
+      );
     }
   }
 }
