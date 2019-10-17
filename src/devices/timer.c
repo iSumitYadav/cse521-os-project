@@ -42,19 +42,20 @@ static bool value_less(const struct list_elem *a_, const struct list_elem *b_, v
   const struct thread *a = list_entry (a_, struct thread, elem_ptr);
   const struct thread *b = list_entry (b_, struct thread, elem_ptr);
 
-  // return a->wakeup_ticks < b->wakeup_ticks;
-  // return a->priority > b->priority;
-if(a->wakeup_ticks != b->wakeup_ticks){
-  return a->wakeup_ticks < b->wakeup_ticks;
-}else{
-  return a->priority > b->priority;
-}
+  // if(a->wakeup_ticks != b->wakeup_ticks){
+  //   return a->wakeup_ticks < b->wakeup_ticks;
+  // }else{
+  //   return a->priority > b->priority;
+  // }
 
-// if(a->priority != b->priority){
-//   return a->priority > b->priority;
-// }else{
-//   return a->wakeup_ticks < b->wakeup_ticks;
-// }
+  return a->wakeup_ticks < b->wakeup_ticks;
+  // return a->priority > b->priority;
+
+  // if(a->priority != b->priority){
+  //   return a->priority > b->priority;
+  // }else{
+  //   return a->wakeup_ticks < b->wakeup_ticks;
+  // }
 
   // if(a->priority < b->priority){
   //   return false;
