@@ -378,27 +378,11 @@ thread_set_priority (int new_priority)
   enum intr_level old_level;
   old_level = intr_disable();
 
-// <<<<<<< HEAD
-  struct thread * front_thread_ptr;
+  int old_priority = thread_current()->priority;
+  thread_current()->priority = new_priority;
 
-  if(!list_empty(&ready_list)){
-    // get the pointer to the first thread in ready list
-    front_thread_ptr = list_entry(
-      list_front(&ready_list),
-      struct thread,
-      elem
-    );
-
-    if(front_thread_ptr->priority > thread_current()->priority){
-      thread_yield();
-    }
-// =======
-//   if(new_priority < thread_current()->priority){
-//   	thread_current()->priority = new_priority;
-//   	thread_yield();
-//   }else{
-//   	thread_current()->priority = new_priority;
-// >>>>>>> 232f5b0ef82f57369d05be5f5adf428160869a08
+  if(new_priority < old_priority){
+    thread_yield();
   }
 
   intr_set_level(old_level);
