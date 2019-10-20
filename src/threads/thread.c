@@ -375,6 +375,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  if(thread_mlfqs)
+    return;
+
+
   enum intr_level old_level;
   old_level = intr_disable();
 
@@ -417,7 +421,10 @@ int
 thread_get_load_avg (void) 
 {
   return fixed_point_to_integer_round(
-    multiply_fixed_point_int(load_avg, 100)
+    multiply_fixed_point_int(
+      load_avg,
+      100
+    )
   );
 }
 
@@ -426,7 +433,10 @@ int
 thread_get_recent_cpu (void) 
 {
   return fixed_point_to_integer_round(
-    multiply_fixed_point_int(thread_current()->recent_cpu, 100)
+    multiply_fixed_point_int(
+      thread_current()->recent_cpu,
+      100
+    )
   );
 }
 
@@ -638,3 +648,71 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+void increment_recent_cpu_mlfqs(struct thread *curr){
+  if(curr != idle_thread){
+    curr->recent_cpu = add_fixed_point_int(curr->recent_cpu, 1);
+  }
+}
+
+void calculate_priority_mlfqs(struct thread *curr){
+  int pri_max_fp = integer_to_fixed_point(PRI_MAX);
+  int recent_cpu_prio = divide_fixed_point_int(curr->recent_cpu, 4);
+  int recent_cpu_nice_prio = 2*curr->nice;
+
+  pri_max_fp = subtract_fixed_point(pri_max_fp, recent_cpu_prio);
+  pri_max_fp = subtract_int_fixed_point(pri_max_fp, recent_cpu_nice_prio);
+
+  curr->priority = fixed_point_to_integer(pri_max_fp);
+
+  if(curr->priority > PRI_MAX){
+    curr->priority = PRI_MAX;
+  }else if(curr->priority < PRI_MIN){
+    curr->priority = PRI_MIN;
+  }
+}
+
+void calculate_load_avg_mlfqs(struct thread *curr){
+  int ready_threads = list_size(&ready_list);
+
+  if(curr != idle_thread)
+    ready_threads += 1;
+
+  int coeff = divide_fixed_point_int(
+    integer_to_fixed_point(59), 60
+  );
+
+  coeff = multiply_fixed_point(coeff, load_avg);
+  ready_threads = divide_fixed_point_int(
+    integer_to_fixed_point(ready_threads),
+    60
+  );
+
+  load_avg = add_fixed_point(ready_threads + coeff);
+}
+
+void update_prio_recent_cpu_mlfq(){
+  struct list_elem *elem;
+  struct thread *t;
+
+  for(elem=list_elem(&all_list); elem!=list_end(&all_list); elem=list_next(elem)){
+    t = list_entry(elem, struct thread, all_elem);
+    calculate_recent_cpu(t);
+    calculate_priority_mlfqs(t);
+  }
+}
+
+void calculate_recent_cpu(struct thread *t){
+  if(t == idle_thread)
+    return;
+
+  int twice_load_avg = multiply_fixed_point_int(load_avg, 2);
+
+  twice_load_avg = divide_fixed_point(
+    twice_load_avg,
+    add_fixed_point_int(twice_load_avg, 1)
+  );
+  twice_load_avg = multiply_fixed_point(twice_load_avg, t->recent_cpu);
+
+  t->recent_cpu = add_fixed_point_int(twice_load_avg, t->nice);
+}

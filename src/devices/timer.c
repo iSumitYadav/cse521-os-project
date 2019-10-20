@@ -243,6 +243,19 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
+  if(thread_mlfqs){
+    increment_recent_cpu(thread_current());
+
+    if(!(ticks % 4)){
+      calculate_priority_mlfqs(thread_current());
+    }
+
+    if(!(ticks % TIMER_FREQ)){
+      calculate_load_avg_mlfqs(thread_current());
+      update_prio_recent_cpu_mlfq();
+    }
+  }
+
   // pointer to a thread (used for pointing to front thread of sleeping list)
   struct thread *front_thread_ptr;
 
