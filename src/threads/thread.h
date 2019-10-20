@@ -23,6 +23,13 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+#define NICE_MIN -20                    /* Lowest Nice. */
+#define NICE_DEFAULT 0                  /* Default Nice. */
+#define NICE_MAX 20                     /* Highest Nice. */
+#define RECENT_CPU_DEFAULT 0            /* Default Recent CPU. */
+#define LOAD_AVG_DEFAULT 0              /* Default Load Avg. */
+
+int load_avg = LOAD_AVG_DEFAULT;
 
 /* A kernel thread or user process.
 
@@ -95,6 +102,9 @@ struct thread
     int64_t wakeup_ticks;               // Number of ticks that should pass before waking up the thread from sleep
     struct list_elem elem_ptr;
     // struct sema t_sema;
+    int nice;
+    int recent_cpu;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
