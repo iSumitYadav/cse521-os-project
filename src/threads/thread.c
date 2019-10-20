@@ -211,7 +211,7 @@ thread_create (const char *name, int priority,
     front_thread_ptr = list_entry(
       list_front(&ready_list),
       struct thread,
-      elem_ptr
+      elem
     );
 
     if(front_thread_ptr->priority > thread_current()->priority){
@@ -379,12 +379,12 @@ thread_set_priority (int new_priority)
 
   struct thread * front_thread_ptr;
 
-  while(!list_empty(&ready_list)){
+  if(!list_empty(&ready_list)){
     // get the pointer to the first thread in ready list
     front_thread_ptr = list_entry(
       list_front(&ready_list),
       struct thread,
-      elem_ptr
+      elem
     );
 
     if(front_thread_ptr->priority > thread_current()->priority){
