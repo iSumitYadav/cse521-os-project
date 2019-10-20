@@ -42,7 +42,7 @@ int inline divide_fixed_point_int(int x_fp, int y_int){
 }
 
 int inline multiply_fixed_point(int x_fp, int y_fp){
-	return ((int64_t)x+fp * y_fp / fp_coeff);
+	return ((int64_t)x_fp * y_fp / fp_coeff);
 }
 
 int inline divide_fixed_point(int x_fp, int y_fp){

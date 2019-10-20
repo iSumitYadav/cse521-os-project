@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -688,7 +689,7 @@ void calculate_load_avg_mlfqs(struct thread *curr){
     60
   );
 
-  load_avg = add_fixed_point(ready_threads + coeff);
+  load_avg = add_fixed_point(ready_threads, coeff);
 }
 
 void update_prio_recent_cpu_mlfq(){
@@ -696,7 +697,7 @@ void update_prio_recent_cpu_mlfq(){
   struct thread *t;
 
   for(elem=list_elem(&all_list); elem!=list_end(&all_list); elem=list_next(elem)){
-    t = list_entry(elem, struct thread, all_elem);
+    t = list_entry(elem, struct thread, allelem);
     calculate_recent_cpu(t);
     calculate_priority_mlfqs(t);
   }
