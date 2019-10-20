@@ -201,6 +201,26 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  enum intr_level old_level;
+  old_level = intr_disable();
+
+  struct thread * front_thread_ptr;
+
+  if(!list_empty(&ready_list)){
+    // get the pointer to the first thread in ready list
+    front_thread_ptr = list_entry(
+      list_front(&ready_list),
+      struct thread,
+      elem_ptr
+    );
+
+    if(front_thread_ptr->priority > thread_current()->priority){
+      thread_yield();
+    }
+  }
+
+  intr_set_level(old_level);
+
   return tid;
 }
 
@@ -353,6 +373,26 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+
+  enum intr_level old_level;
+  old_level = intr_disable();
+
+  struct thread * front_thread_ptr;
+
+  while(!list_empty(&ready_list)){
+    // get the pointer to the first thread in ready list
+    front_thread_ptr = list_entry(
+      list_front(&ready_list),
+      struct thread,
+      elem_ptr
+    );
+
+    if(front_thread_ptr->priority > thread_current()->priority){
+      thread_yield();
+    }
+  }
+
+  intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -479,6 +519,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  // t->thread_set_priority(priority);
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
