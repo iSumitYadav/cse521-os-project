@@ -61,6 +61,8 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
 
+int load_avg;
+
 static void kernel_thread (thread_func *, void *aux);
 
 static void idle (void *aux UNUSED);
@@ -108,6 +110,7 @@ void
 thread_start (void) 
 {
   /* Create the idle thread. */
+  load_avg = LOAD_AVG_DEFAULT;
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
@@ -529,6 +532,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   // t->thread_set_priority(priority);
+  t->recent_cpu = 0;
+  t->nice = 0;
   t->magic = THREAD_MAGIC;
 
   old_level = intr_disable ();
