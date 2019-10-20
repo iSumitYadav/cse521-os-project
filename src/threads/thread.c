@@ -139,6 +139,16 @@ thread_tick (void)
     intr_yield_on_return ();
 }
 
+// Though it's already present in src/tests/internal/list.c
+/* Returns true if value A is less than value B, false
+   otherwise. */
+static bool value_less_prio(const struct list_elem *a_, const struct list_elem *b_, void *aux){
+  const struct thread *a = list_entry (a_, struct thread, elem);
+  const struct thread *b = list_entry (b_, struct thread, elem);
+
+    return a->priority > b->priority;
+}
+
 /* Prints thread statistics. */
 void
 thread_print_stats (void) 
@@ -243,15 +253,6 @@ thread_block (void)
   intr_set_level (old_level);
 }
 
-// Though it's already present in src/tests/internal/list.c
-/* Returns true if value A is less than value B, false
-   otherwise. */
-static bool value_less_prio(const struct list_elem *a_, const struct list_elem *b_, void *aux){
-  const struct thread *a = list_entry (a_, struct thread, elem);
-  const struct thread *b = list_entry (b_, struct thread, elem);
-
-    return a->priority > b->priority;
-}
 
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
@@ -343,7 +344,9 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread){
+  	// list_push_back(&ready_list, &cur->elem);
     list_insert_ordered(&ready_list, &cur->elem, value_less_prio, NULL);
+    // list_sort(&ready_list, value_less_prio, NULL);
   }
 
   cur->status = THREAD_READY;
@@ -372,11 +375,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
-
   enum intr_level old_level;
   old_level = intr_disable();
 
+// <<<<<<< HEAD
   struct thread * front_thread_ptr;
 
   if(!list_empty(&ready_list)){
@@ -390,6 +392,13 @@ thread_set_priority (int new_priority)
     if(front_thread_ptr->priority > thread_current()->priority){
       thread_yield();
     }
+// =======
+//   if(new_priority < thread_current()->priority){
+//   	thread_current()->priority = new_priority;
+//   	thread_yield();
+//   }else{
+//   	thread_current()->priority = new_priority;
+// >>>>>>> 232f5b0ef82f57369d05be5f5adf428160869a08
   }
 
   intr_set_level(old_level);
@@ -551,6 +560,7 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
+  	list_sort(&ready_list, value_less_prio, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
