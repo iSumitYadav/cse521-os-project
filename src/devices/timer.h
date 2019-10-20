@@ -26,4 +26,6 @@ void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
 
+// void increment_recent_cpu_mlfqs(struct thread *);
+
 #endif /* devices/timer.h */

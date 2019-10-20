@@ -4,6 +4,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "list.h"
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -696,7 +697,7 @@ void update_prio_recent_cpu_mlfq(){
   struct list_elem *elem;
   struct thread *t;
 
-  for(elem=list_elem(&all_list); elem!=list_end(&all_list); elem=list_next(elem)){
+  for(elem=list_begin(&all_list); elem!=list_end(&all_list); elem=list_next(&all_list)){
     t = list_entry(elem, struct thread, allelem);
     calculate_recent_cpu(t);
     calculate_priority_mlfqs(t);

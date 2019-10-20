@@ -244,7 +244,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
 
   if(thread_mlfqs){
-    increment_recent_cpu(thread_current());
+    increment_recent_cpu_mlfqs(thread_current());
 
     if(!(ticks % 4)){
       calculate_priority_mlfqs(thread_current());
