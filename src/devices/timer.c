@@ -246,11 +246,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
   if(thread_mlfqs){
     increment_recent_cpu_mlfqs(thread_current());
 
-    if(!(ticks % 4)){
+    if(ticks % 4 == 0){
       calculate_priority_mlfqs(thread_current());
     }
 
-    if(!(ticks % TIMER_FREQ)){
+    if(ticks % TIMER_FREQ == 0){
       calculate_load_avg_mlfqs(thread_current());
       update_prio_recent_cpu_mlfq();
     }

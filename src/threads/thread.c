@@ -663,12 +663,15 @@ void increment_recent_cpu_mlfqs(struct thread *curr){
 }
 
 void calculate_priority_mlfqs(struct thread *curr){
+  if(curr == idle_thread)
+    return;
+
   int pri_max_fp = integer_to_fixed_point(PRI_MAX);
   int recent_cpu_prio = divide_fixed_point_int(curr->recent_cpu, 4);
   int recent_cpu_nice_prio = 2*curr->nice;
 
   pri_max_fp = subtract_fixed_point(pri_max_fp, recent_cpu_prio);
-  pri_max_fp = subtract_int_fixed_point(pri_max_fp, recent_cpu_nice_prio);
+  pri_max_fp = subtract_fixed_point_int(pri_max_fp, recent_cpu_nice_prio);
 
   curr->priority = fixed_point_to_integer(pri_max_fp);
 
