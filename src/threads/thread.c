@@ -11,6 +11,8 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include <devices/timer.h>
+#include "threads/fixed_point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -115,6 +117,7 @@ thread_start (void)
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
+  load_average = 0;
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -133,6 +136,52 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  if(thread_mlfqs)
+  {
+    if(strcmp(t->name,"idle")!=0)
+    {
+      t->recent_cpu = fpintadd(t->recent_cpu, 1);
+    }
+
+    if(timer_ticks() % 4 == 0)
+    {
+        
+        struct list_elem *e;
+        for(e = list_begin(&all_list); e!= list_end(&all_list); e = list_next(e))
+        {
+          struct thread *t = list_entry(e, struct thread, allelem);
+          //if(t==idle_thread){return;}
+          t->priority = PRI_MAX - fptointround(fpintdiv(t->recent_cpu,4)) - (t->nice * 2);
+        }
+    }
+
+    if(timer_ticks() % 100 == 0)
+    {
+      struct list_elem *e;
+      int inter;
+      
+      if(strcmp(t->name,"idle")!=0)
+      {
+
+          load_average = fpadd(fpintdiv(fpintmul(load_average,59), 60), fpintdiv(inttofp(list_size(&ready_list) + 1), 60));
+      }
+      else
+      {
+          load_average = fpadd(fpintdiv(fpintmul(load_average,59), 60), fpintdiv(inttofp(list_size(&ready_list)), 60));
+
+      }
+
+      inter = fpdiv(fpintmul(load_average,2), fpintadd(fpintmul(load_average,2),1));
+
+      for(e=list_begin(&all_list); e!= list_end(&all_list); e = list_next(e))
+      {
+        struct thread *t = list_entry(e, struct thread, allelem);
+        t->recent_cpu = fpintadd(fpmul(inter, t->recent_cpu), t->nice);
+      }
+
+    }
+  }
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -193,6 +242,8 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  enum intr_level old_level = intr_disable();
+
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -207,11 +258,10 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-
+  intr_set_level(old_level);
   /* Add to run queue. */
   thread_unblock (t);
 
-  enum intr_level old_level;
   old_level = intr_disable();
 
   struct thread * front_thread_ptr;
@@ -400,6 +450,7 @@ void
 thread_set_nice (int nice UNUSED) 
 {
   /* Not yet implemented. */
+  thread_current()->nice = nice;
 }
 
 /* Returns the current thread's nice value. */
@@ -407,7 +458,7 @@ int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
@@ -415,7 +466,7 @@ int
 thread_get_load_avg (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return fptointround(fpintmul(load_average,100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -423,7 +474,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return fptointround(fpintmul(thread_current()->recent_cpu,100));
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -514,7 +565,16 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   // t->thread_set_priority(priority);
   t->magic = THREAD_MAGIC;
+  t->nice = 0;
 
+  if(thread_mlfqs){
+    if(strcmp(t->name, "main")==0){
+      t->recent_cpu = 0;
+    }
+    else{
+      t->recent_cpu = fpintdiv(thread_get_recent_cpu(),100);
+    }
+  }
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
