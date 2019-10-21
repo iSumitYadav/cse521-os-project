@@ -275,6 +275,23 @@ timer_interrupt (struct intr_frame *args UNUSED)
       );
     }
   }
+
+  if (thread_mlfqs)
+    {
+      mlfqs_increment();
+      if (ticks % TIMER_FREQ == 0)
+  {
+    mlfqs_load_avg();
+    mlfqs_recalc(); // Recalcs recent_cpu and priority
+  }
+      if (ticks % 4 == 0)
+  {
+    mlfqs_priority(thread_current());
+    test_max_priority(); // Tests if thread still has max priority
+  }
+    }
+
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

@@ -1,64 +1,79 @@
-#define F 16384 // F = 2^14
-#include <stdint.h>
-// i is integer
-// a and b are fixed point numbers in 17.14 format
-//Integer is passed as second argument
- int inttofp(int i);
- int fpadd(int a, int b);
- int fpsub(int a, int b);
- int fpintadd(int a, int i);
- int fpintsub(int a, int i);
- int fpmul(int a,int b);
- int fpdiv(int a,int b);
- int fpintmul(int a, int i);
- int fpintdiv(int a, int i);
- int fptoint(int a);
- int fptointround(int a);
+#define F (1 << 14)
+#define FP_MAX (1 << 17)
 
-  int inttofp(int i)
-  {
-  return i * F;
-  }
-  int fpadd(int a, int b)
-  {
-  	return a + b;
-  }
-  int fpsub(int a, int b)
-  {
-  	return a - b;
-  }
-  int fpintadd(int a, int i)
-  {
-  	return a + inttofp(i);
-  }
-  int fpintsub(int a, int i)
-  {
-  	return a - inttofp(i);
-  }
-  int fpmul(int a,int b)
-  {
-  	return ((int64_t) a)* b / F;
-  }
-  int fpdiv(int a, int b)
-  {
-  	return ((int64_t) a)* F / b;
-  }
-  int fpintmul(int a, int i)
-  {
-    return a * i;
-  }
-  int fpintdiv(int a, int i)
-  {
-    return a / i;
-  }
-  int fptoint(int a)
-  {
-    return a / F;
-  }
-  int fptointround(int a)
-  {
-  if(a >= 0)
-      return (a + F/2) / F;
-   else
-      return (a - F/2) / F; 
-  }
+// x and y denote fixed_point numbers in 17.14 format
+// n is an integer
+
+int int_to_fp(int n);
+int fp_to_int_round(int x);
+int fp_to_int(int x);
+int add_fp(int x, int y);
+int add_mixed(int x, int n);
+int sub_fp(int x, int y);
+int sub_mixed(int x, int n);
+int mult_fp(int x, int y);
+int mult_mixed(int x, int y);
+int div_fp(int x, int y);
+int div_mixed(int x, int n);
+
+int int_to_fp(int n)
+{
+  return n * F;
+}
+
+int fp_to_int_round(int x)
+{
+  if (x >= 0)
+    {
+      return (x + F / 2) / F;
+    }
+  else
+    {
+      return (x - F / 2) / F;
+    }
+}
+
+int fp_to_int(int x)
+{
+  return x / F;
+}
+
+int add_fp(int x, int y)
+{
+  return x + y;
+}
+
+int sub_fp(int x, int y)
+{
+  return x - y;
+}
+
+int add_mixed(int x, int n)
+{
+  return x + int_to_fp(n);
+}
+
+int sub_mixed(int x, int n)
+{
+  return x - int_to_fp(n);
+}
+
+int mult_fp(int x, int y)
+{
+  return ((int64_t) x) * y / F;
+}
+
+int mult_mixed(int x, int n)
+{
+  return x * n;
+}
+
+int div_fp(int x, int y)
+{
+  return ((int64_t) x) * F / y;
+}
+
+int div_mixed(int x, int n)
+{
+  return x / n;
+}

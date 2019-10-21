@@ -95,6 +95,8 @@ struct thread
     int64_t wakeup_ticks;               // Number of ticks that should pass before waking up the thread from sleep
     struct list_elem elem_ptr;
     // struct sema t_sema;
+    int nice;
+    int recent_cpu;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -140,5 +142,13 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+void test_max_priority (void);
+
+void mlfqs_priority (struct thread *t);
+void mlfqs_recent_cpu (struct thread *t);
+void mlfqs_load_avg (void);
+void mlfqs_increment (void);
+
+void mlfqs_recalc (void);
 
 #endif /* threads/thread.h */
