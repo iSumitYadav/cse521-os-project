@@ -4,7 +4,6 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include <kernel/list.h>
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -96,9 +95,6 @@ struct thread
     int64_t wakeup_ticks;               // Number of ticks that should pass before waking up the thread from sleep
     struct list_elem elem_ptr;
     // struct sema t_sema;
-    int nice;
-
-    int recent_cpu; 
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -113,7 +109,6 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
-int load_average;
 
 void thread_init (void);
 void thread_start (void);
