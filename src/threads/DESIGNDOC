@@ -37,28 +37,16 @@ Christopher Sam Roy <croy2@buffalo.edu>
 	1. int64_t wakeup_ticks;								// NEW MEMBER of struct thread
 		Wakeup_ticks needs to be calculated based on the current system ticks and the number of ticks for which the thread is sleeping.
 
-	2. struct list_elem elem_ptr;								// NEW MEMBER of struct thread
-		elem_ptr is used to iterate pointer in sleep thread
+	2. struct sema t_sema;									// NEW MEMBER of struct thread
+		The t_sema semaphore of a thread will help us maintain synchronization of multiple threads.
 
 
 	===========
-	in timer.c
+	in thread.c
 	===========
 
-	1. int64_t ticks;									
-		Wakeup_ticks needs to be calculated based on the current system ticks and the number of ticks for which the thread is sleeping.
-
-	2. struct semaphore t_sema;									
-		The t_sema semaphore of a thread will help us maintain synchronization between multiple threads.
-	
-	3. static struct list thread_sleep_insert_ordered;		
+	1. static struct list thread_sleep_insert_ordered;		// NEW MEMBER of struct thread
 		We will define a new list thread_sleep_insert_ordered which is used to sort threads in increasing order of wakeup ticks.
-
-	4. struct thread * current_thread;							// in timer_sleep()
-		current_thread is used to store the current thread.
-
-	5. static bool value_less()
-		value_less() is a function, which compares the wakeup_ticks of all the threads, in the sleeping thread list, with the current ticks, and returns a boolean value accordingly.
 
 
 ---- ALGORITHMS ----
@@ -66,12 +54,12 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> A2: Briefly describe what happens in a call to timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
-	timer_sleep() will be modified to remove busy waiting by calculating the wakeup_ticks of the calling thread and pushing it to a sleeping thread list which is sorted on wakeup_ticks. It will also block the threads after adding to sleeping thread list. As timer_interrupt() is called on every tick we can check there if any thread in the sleeping list needs to wake up, if the waking time of the thread has come, it'll be waken up and removed from the sleeping thread list, unblocked and added to the ready list.
+	timer_sleep() will be modified to remove busy waiting by calculating the wakeup_ticks of the calling thread and pushing it to a sleeping thread list which is sorted on wakeup_ticks, as timer_interrupt() is called on every tick we can check there if any thread in the sleeping list needs to wake up, if the waking time of the thread has come, it'll be waken up and removed from the list.
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-	Sorted sleeping thread list based on ascending wakeup_ticks is used to save the thread which needs to be waken up by their wake up ticks, so for every tick it is checked whether a thread(s) needs to be waken up, instead of checking the full unordered list.
+	sorted list based on ascending wakeup_ticks order is used to save the thread which needs to be waken up their wake up ticks, so for every tick it is checked whether a thread(s) needs to be waken up, instead of checking the full unordered list.
 
 
 
@@ -110,18 +98,12 @@ Christopher Sam Roy <croy2@buffalo.edu>
 	in thread.h
 	===========
 
-	1. static bool value_less_prio();							
-		value_less_prio() is a function, which compares the priority of 2 threads, and returns a boolean value accordingly.
+		1. int initial_proirity;			// NEW MEMBER of struct thread
+			used to store the original priority of the thread, useful when we have to revert back to original priority after priority donation
 
-	===========
-	in thread.h
-	===========
+		2. struct list priority_donated;	// NEW MEMBER of struct thread
+			it holds the list of all the threads to whom the current thread has donated its priority.
 
-	1. struct thread * front_thread_ptr;								// in thread_create()
-		front_thread_ptr stores the first thread from the ready list, to compare the priority with the current thread.
-
-	2. int old_priority;										// in thread_set_priority()
-		old_priority stores the priority of the current thread, to compare it with the new priority.
 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a

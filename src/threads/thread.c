@@ -4,6 +4,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "list.h"
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -13,6 +14,7 @@
 #include "threads/vaddr.h"
 #include <devices/timer.h>
 #include "threads/fixed_point.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -24,11 +26,11 @@
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
-static struct list ready_list;
+// static struct list ready_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
-static struct list all_list;
+
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -60,6 +62,8 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+
+int load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -111,7 +115,7 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+  load_avg = LOAD_AVG_DEFAULT;
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -242,8 +246,7 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
-  enum intr_level old_level;
-  old_level = intr_disable();
+  enum intr_level old_level = intr_disable();
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -260,11 +263,10 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  old_level = intr_disable();
-
   intr_set_level(old_level);
   /* Add to run queue. */
   thread_unblock (t);
+
 
   struct thread * front_thread_ptr;
 
@@ -396,7 +398,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread){
-  	// list_push_back(&ready_list, &cur->elem);
+    // list_push_back(&ready_list, &cur->elem);
     list_insert_ordered(&ready_list, &cur->elem, value_less_prio, NULL);
     // list_sort(&ready_list, value_less_prio, NULL);
   }
@@ -427,6 +429,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  if(thread_mlfqs)
+    return;
+
+
   enum intr_level old_level;
   old_level = intr_disable();
 
@@ -449,9 +455,11 @@ thread_get_priority (void)
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int nice UNUSED)
 {
   /* Not yet implemented. */
+
+  // ASSERT(thread_current()->nice <= NICE_MAX && thread_current()->nice >= NICE_MIN)
   thread_current()->nice = nice;
 }
 
@@ -459,7 +467,7 @@ thread_set_nice (int nice UNUSED)
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
+
   return thread_current()->nice;
 }
 
@@ -467,7 +475,6 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
   return fptointround(fpintmul(load_average,100));
 }
 
@@ -475,8 +482,9 @@ thread_get_load_avg (void)
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
+
   return fptointround(fpintmul(thread_current()->recent_cpu,100));
+
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -566,6 +574,15 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   // t->thread_set_priority(priority);
+  if(thread_mlfqs){
+    if(strcmp(t->name, "main") == 0){
+      t->recent_cpu = 0;
+    }else{
+      t->recent_cpu = divide_fixed_point_int(thread_get_recent_cpu(), 100);
+    }
+  }
+  t->recent_cpu = 0;
+  t->nice = 0;
   t->magic = THREAD_MAGIC;
   t->nice = 0;
 
@@ -607,7 +624,7 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-  	list_sort(&ready_list, value_less_prio, NULL);
+    list_sort(&ready_list, value_less_prio, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
@@ -697,3 +714,74 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+void increment_recent_cpu_mlfqs(){
+  if(thread_current() != idle_thread){
+    thread_current()->recent_cpu = add_fixed_point_int(thread_current()->recent_cpu, 1);
+  }
+}
+
+void calculate_priority_mlfqs(struct thread *curr){
+  if(curr == idle_thread)
+    return;
+
+  int pri_max_fp = integer_to_fixed_point(PRI_MAX);
+  int recent_cpu_prio = divide_fixed_point_int(curr->recent_cpu, 4);
+  int recent_cpu_nice_prio = 2*curr->nice;
+
+  pri_max_fp = subtract_fixed_point(pri_max_fp, recent_cpu_prio);
+  pri_max_fp = subtract_fixed_point_int(pri_max_fp, recent_cpu_nice_prio);
+
+  curr->priority = fixed_point_to_integer(pri_max_fp);
+
+  if(curr->priority > PRI_MAX){
+    curr->priority = PRI_MAX;
+  }else if(curr->priority < PRI_MIN){
+    curr->priority = PRI_MIN;
+  }
+}
+
+void calculate_load_avg_mlfqs(struct thread *curr){
+  int ready_threads = list_size(&ready_list);
+
+  if(curr != idle_thread)
+    ready_threads += 1;
+
+  int coeff = divide_fixed_point_int(
+    integer_to_fixed_point(59), 60
+  );
+
+  coeff = multiply_fixed_point(coeff, load_avg);
+  ready_threads = divide_fixed_point_int(
+    integer_to_fixed_point(ready_threads),
+    60
+  );
+
+  load_avg = add_fixed_point(ready_threads, coeff);
+}
+
+void update_prio_recent_cpu_mlfq(){
+  struct list_elem *elem;
+  struct thread *t;
+
+  for(elem=list_begin(&all_list); elem!=list_end(&all_list); elem=list_next(&all_list)){
+    t = list_entry(elem, struct thread, allelem);
+    calculate_recent_cpu(t);
+    calculate_priority_mlfqs(t);
+  }
+}
+
+void calculate_recent_cpu(struct thread *t){
+  if(t == idle_thread)
+    return;
+
+  int twice_load_avg = multiply_fixed_point_int(load_avg, 2);
+
+  twice_load_avg = divide_fixed_point(
+    twice_load_avg,
+    add_fixed_point_int(twice_load_avg, 1)
+  );
+  twice_load_avg = multiply_fixed_point(twice_load_avg, t->recent_cpu);
+
+  t->recent_cpu = add_fixed_point_int(twice_load_avg, t->nice);
+}

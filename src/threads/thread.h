@@ -24,6 +24,12 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+#define NICE_MIN -20                    /* Lowest Nice. */
+#define NICE_DEFAULT 0                  /* Default Nice. */
+#define NICE_MAX 20                     /* Highest Nice. */
+#define RECENT_CPU_DEFAULT 0            /* Default Recent CPU. */
+#define LOAD_AVG_DEFAULT 0              /* Default Load Avg. */
+
 
 /* A kernel thread or user process.
 
@@ -99,6 +105,7 @@ struct thread
     int nice;
     int recent_cpu;
 
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -112,7 +119,9 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
 int load_average;
+
 
 void thread_init (void);
 void thread_start (void);
@@ -142,7 +151,14 @@ void thread_set_priority (int);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
-int thread_get_recent_cpu (void);
-int thread_get_load_avg (void);
+// int thread_get_recent_cpu (void);
+// int thread_get_load_avg (void);
+// void increment_recent_cpu_mlfqs(struct thread *);
+// void calculate_priority_mlfqs(struct thread *);
+// void calculate_load_avg_mlfqs(struct thread *);
+// void update_prio_recent_cpu_mlfq(void);
+// void calculate_recent_cpu(struct thread *);
+static struct list ready_list;
+static struct list all_list;
 
 #endif /* threads/thread.h */
