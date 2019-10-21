@@ -10,10 +10,10 @@ int inline fixed_point_to_integer(int x_fp){
 }
 
 int inline fixed_point_to_integer_round(int x_fp){
-	if(x_fp > 0){
-		return ((x_fp + fp_coeff/2) / 2);
+	if(x_fp >= 0){
+		return ((x_fp + fp_coeff/2) / fp_coeff);
 	}else{
-		return ((x_fp - fp_coeff/2) / 2);
+		return ((x_fp - fp_coeff/2) / fp_coeff);
 	}
 }
 

@@ -532,6 +532,13 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   // t->thread_set_priority(priority);
+  if(thread_mlfqs){
+    if(strcmp(t->name, "main") == 0){
+      t->recent_cpu = 0;
+    }else{
+      t->recent_cpu = divide_fixed_point_int(thread_get_recent_cpu(), 100);
+    }
+  }
   t->recent_cpu = 0;
   t->nice = 0;
   t->magic = THREAD_MAGIC;
