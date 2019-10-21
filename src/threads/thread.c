@@ -24,11 +24,11 @@
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
-static struct list ready_list;
+// static struct list ready_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
-static struct list all_list;
+
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -110,11 +110,10 @@ void
 thread_start (void) 
 {
   /* Create the idle thread. */
-  load_avg = LOAD_AVG_DEFAULT;
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+  load_avg = LOAD_AVG_DEFAULT;
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -198,6 +197,8 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  enum intr_level old_level = intr_disable();
+
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -212,12 +213,10 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-
+  intr_set_level(old_level);
   /* Add to run queue. */
   thread_unblock (t);
 
-  enum intr_level old_level;
-  old_level = intr_disable();
 
   struct thread * front_thread_ptr;
 
@@ -349,7 +348,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread){
-  	// list_push_back(&ready_list, &cur->elem);
+    // list_push_back(&ready_list, &cur->elem);
     list_insert_ordered(&ready_list, &cur->elem, value_less_prio, NULL);
     // list_sort(&ready_list, value_less_prio, NULL);
   }
@@ -409,7 +408,7 @@ void
 thread_set_nice (int nice UNUSED)
 {
   /* Not yet implemented. */
-  ASSERT(thread_current()->nice <= NICE_MAX && thread_current()->nice >= NICE_MIN)
+  // ASSERT(thread_current()->nice <= NICE_MAX && thread_current()->nice >= NICE_MIN)
   thread_current()->nice = nice;
 }
 
@@ -572,7 +571,7 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-  	list_sort(&ready_list, value_less_prio, NULL);
+    list_sort(&ready_list, value_less_prio, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
@@ -663,9 +662,9 @@ allocate_tid (void)
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
-void increment_recent_cpu_mlfqs(struct thread *curr){
-  if(curr != idle_thread){
-    curr->recent_cpu = add_fixed_point_int(curr->recent_cpu, 1);
+void increment_recent_cpu_mlfqs(){
+  if(thread_current() != idle_thread){
+    thread_current()->recent_cpu = add_fixed_point_int(thread_current()->recent_cpu, 1);
   }
 }
 
