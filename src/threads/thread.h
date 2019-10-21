@@ -144,10 +144,10 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 void test_max_priority (void);
 
+void increment_recent_cpu_mlfqs (void);
 void calculate_priority_mlfqs (struct thread *t);
 void calculate_recent_cpu_mlfqs (struct thread *t);
 void calculate_load_avg_mlfqs (void);
-void increment_recent_cpu_mlfqs (void);
 
 void calculate_recent_cpu_priority_mlfqs (void);
 

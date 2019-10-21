@@ -636,6 +636,32 @@ allocate_tid (void)
   return tid;
 }
 
+void increment_recent_cpu_mlfqs (void){
+  if(thread_current() != idle_thread){
+    thread_current()->recent_cpu = add_fixed_point_int(thread_current()->recent_cpu, 1);
+  }
+}
+
+void calculate_recent_cpu_priority_mlfqs (void){
+  struct list_elem *elem = list_begin(&all_list);
+  struct thread *t;
+
+
+  while(elem != list_end(&all_list)){
+    t = list_entry(elem, struct thread, allelem);
+
+    if(t != idle_thread){
+      calculate_recent_cpu_mlfqs(t);
+      calculate_priority_mlfqs(t);
+    }
+
+    if(list_empty(&all_list))
+      break;
+
+    elem = list_next(elem)
+  }
+}
+
 void calculate_priority_mlfqs(struct thread *t){
   t->priority = fixed_point_to_int(
     sub_fixed_point_int(
@@ -679,26 +705,6 @@ void calculate_load_avg_mlfqs(void){
     divide_fixed_point_int(
       int_to_fixed_point(ready_thread), 60)
   );
-}
-
-void increment_recent_cpu_mlfqs (void){
-  if(thread_current() != idle_thread){
-    thread_current()->recent_cpu = add_fixed_point_int(thread_current()->recent_cpu, 1);
-  }
-}
-
-void calculate_recent_cpu_priority_mlfqs (void){
-  struct list_elem *elem;
-  struct thread *t;
-
-  for(elem=list_begin(&all_list); elem!=list_end(&all_list);elem=list_next(elem)){
-    t = list_entry(elem, struct thread, allelem);
-
-    if(t != idle_thread){
-      calculate_recent_cpu_mlfqs(t);
-      calculate_priority_mlfqs(t);
-    }
-  }
 }
 
 
