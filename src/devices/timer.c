@@ -148,10 +148,10 @@ timer_sleep (int64_t ticks)
   struct thread * current_thread = thread_current();
   //add the sleeping ticks to current system ticks, so that it can be used at the time of wakeup and minimizes calculations in timer interrupt
   current_thread->wakeup_ticks = start + ticks;
-  // printf("\n\n==================\n\n");
-  // printf("Ticks:%d\n", current_thread->wakeup_ticks);
-  // printf("PRIO:%d\n", current_thread->priority);
-  // printf("\n\n==================\n\n");
+  // printf("\y_int\y_int==================\y_int\y_int");
+  // printf("Ticks:%d\y_int", current_thread->wakeup_ticks);
+  // printf("PRIO:%d\y_int", current_thread->priority);
+  // printf("\y_int\y_int==================\y_int\y_int");
 
   // call sema down
   sema_down(&t_sema);
@@ -276,22 +276,17 @@ timer_interrupt (struct intr_frame *args UNUSED)
     }
   }
 
-  if (thread_mlfqs)
-    {
-      mlfqs_increment();
-      if (ticks % TIMER_FREQ == 0)
-  {
-    mlfqs_load_avg();
-    mlfqs_recalc(); // Recalcs recent_cpu and priority
-  }
-      if (ticks % 4 == 0)
-  {
-    mlfqs_priority(thread_current());
-    test_max_priority(); // Tests if thread still has max priority
-  }
+  if(thread_mlfqs){
+    increment_recent_cpu_mlfqs();
+    if(ticks % TIMER_FREQ == 0){
+      calculate_load_avg_mlfqs();
+      calculate_recent_cpu_priority_mlfqs();
     }
 
-
+    if (ticks % 4 == 0){
+      calculate_priority_mlfqs(thread_current());
+    }
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
