@@ -658,7 +658,7 @@ void calculate_recent_cpu_priority_mlfqs (void){
     if(list_empty(&all_list))
       break;
 
-    elem = list_next(elem)
+    elem = list_next(elem);
   }
 }
 
