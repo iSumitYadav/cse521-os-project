@@ -418,7 +418,7 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  return fixed_point_to_int_round( multiply_fixed_point_int(load_avg, 100));
+  return fixed_point_to_integer_round( multiply_fixed_point_int(load_avg, 100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -426,7 +426,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-  return fixed_point_to_int_round( multiply_fixed_point_int(thread_current()->recent_cpu, 100));
+  return fixed_point_to_integer_round( multiply_fixed_point_int(thread_current()->recent_cpu, 100));
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -663,10 +663,10 @@ void calculate_recent_cpu_priority_mlfqs (void){
 }
 
 void calculate_priority_mlfqs(struct thread *t){
-  t->priority = fixed_point_to_int(
-    sub_fixed_point_int(
-      sub_fixed_point(
-        int_to_fixed_point(PRI_MAX),
+  t->priority = fixed_point_to_integer(
+    subtract_fixed_point_int(
+      subtract_fixed_point(
+        integer_to_fixed_point(PRI_MAX),
         divide_fixed_point_int(t->recent_cpu, 4)
       ),
       2*t->nice
@@ -703,7 +703,7 @@ void calculate_load_avg_mlfqs(void){
       60
     ),
     divide_fixed_point_int(
-      int_to_fixed_point(ready_thread), 60)
+      integer_to_fixed_point(ready_thread), 60)
   );
 }
 
