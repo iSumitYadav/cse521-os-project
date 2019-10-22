@@ -278,12 +278,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 
   if(thread_mlfqs){
     increment_recent_cpu_mlfqs();
-    if(ticks % TIMER_FREQ == 0){
+    if(!(ticks % TIMER_FREQ)){
       calculate_load_avg_mlfqs();
       calculate_recent_cpu_priority_mlfqs();
     }
 
-    if (ticks % 4 == 0){
+    if (!(ticks % 4)){
       calculate_priority_mlfqs(thread_current());
     }
   }
