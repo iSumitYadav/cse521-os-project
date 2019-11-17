@@ -148,10 +148,10 @@ timer_sleep (int64_t ticks)
   struct thread * current_thread = thread_current();
   //add the sleeping ticks to current system ticks, so that it can be used at the time of wakeup and minimizes calculations in timer interrupt
   current_thread->wakeup_ticks = start + ticks;
-  // printf("\n\n==================\n\n");
-  // printf("Ticks:%d\n", current_thread->wakeup_ticks);
-  // printf("PRIO:%d\n", current_thread->priority);
-  // printf("\n\n==================\n\n");
+  // printf("\y_int\y_int==================\y_int\y_int");
+  // printf("Ticks:%d\y_int", current_thread->wakeup_ticks);
+  // printf("PRIO:%d\y_int", current_thread->priority);
+  // printf("\y_int\y_int==================\y_int\y_int");
 
   // call sema down
   sema_down(&t_sema);
@@ -243,19 +243,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
-  if(thread_mlfqs){
-    increment_recent_cpu_mlfqs(thread_current());
-
-    if(!(ticks % 4)){
-      calculate_priority_mlfqs(thread_current());
-    }
-
-    if(!(ticks % TIMER_FREQ)){
-      calculate_load_avg_mlfqs(thread_current());
-      update_prio_recent_cpu_mlfq();
-    }
-  }
-
   // pointer to a thread (used for pointing to front thread of sleeping list)
   struct thread *front_thread_ptr;
 
@@ -286,6 +273,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
         struct thread,
         elem_ptr
       );
+    }
+  }
+
+  if(thread_mlfqs){
+    increment_recent_cpu_mlfqs();
+    if(!(ticks % TIMER_FREQ)){
+      calculate_load_avg_mlfqs();
+      calculate_recent_cpu_priority_mlfqs();
+    }
+
+    if (!(ticks % 4)){
+      calculate_priority_mlfqs(thread_current());
     }
   }
 }
