@@ -154,14 +154,14 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
-	When a thread calls lock_acquire(), again two posibilities needs to be addressed:
+	When a thread calls lock_acquire(), again two possibilities needs to be addressed:
 		- if lock is free then it can be directly acquired by the requesting thread or
 		- if the lock is already acquired by a thread and a new thread is requesting lock with higher priority then the priority of current thread is saved in a variable and the priority of requesting thread is copied. This ensures that current thread finishes execution and releases the lock which is then acquired by requesting thread, which then finishes execution, thereby succesfully implementing priority donation.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
-	As the lock_realease() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all the threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread whose priority this thread has acquired using the list of priority donated threads. Then the priority of current thread is set to its original priority and we monitor the lock of the thread we found from the list of priority donated threads.
+	When the lock_release() is called, we have to make sure that the original priority of the thread has to be restored. Also we have to keep track of all the threads who have donated and acquired priorities. Whenever a thread calls lock_release(), we find the thread whose priority this thread has acquired using the list of priority donated threads. Then the priority of current thread is set to its original priority and we monitor the lock of the thread we found from the list of priority donated threads.
 
 ---- SYNCHRONIZATION ----
 
@@ -169,14 +169,16 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-	We haven't closed on the design yet, we're currently in the idea building phase
+	When we do priority donation, the donor sets the priority of the thread, but at the same time, the thread may itself want to change its priority. If they both sets the priority in different order, it might result in race condition. 
 
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-	We haven't closed on the design yet, we're currently in the idea building phase
+	In this design, we have made the memory allocation very efficient. Instead of using too many variables for every single thing, we are directly calling the functions and returning wherever needed.
+Another approach I thought of using, was to sort the ready list according to priority after putting a thread into the ready list. This was taking extra memory. Instead we chose to insert the thread at
+appropriate position in the sorted ready list.
 
 			  ADVANCED SCHEDULER
 			  ==================
@@ -202,8 +204,22 @@ Christopher Sam Roy <croy2@buffalo.edu>
 	in thread.c
 	===========
 
-	1. static int load_avg;
-		gives an estimate of average number of threads ready to run over the past minute.
+	1. void increment_recent_cpu_mlfqs()
+
+	2. void calculate_priority_mlfqs()
+
+	3. void calculate_load_avg_mlfqs()
+
+	4. void update_prio_recent_cpu_mlfq()
+	
+	5. void calculate_recent_cpu()
+
+
+	//Added new file
+	================
+	in fixed_point.h
+	================
+
 
 
 ---- ALGORITHMS ----
@@ -213,30 +229,32 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> scheduling decision and the priority and recent_cpu values for each
 >> thread after each given number of timer ticks:
 
-timer  	recent_cpu    	priority   		thread
+timer  	recent_cpu    	priority   	thread
 ticks   A   B   C   	A   B   C   	to run
 -----  	--  --  --  	--  --  --   	------
- 0		0	0	0		63	61	59		A
- 4		4	0	0		62	61	59		A
- 8		8	0	0		61	61	59		B
-12		8	4	0		61	60	59		A
-16		12	4	0		60	60	59		B
-20		12	8	0		60	59	59		C
-24		12	8	4		60	59	58		A
-28		16	8	4		59	59	58		B
-32		16	12	4		59	58	58		A
-36		20	12	4		58	58	58		C
+ 0	0   1	2	63  61	59	A	
+ 4	4   1	2	62  61	59	A	
+ 8	7   2	4	61  61	58	B	
+12	6   6	6	61  59	58	A	
+16	9   6	7	60  59	57	A	
+20	12  6	8	60  59	57	A	
+24	15  6	9	59  59	57	B	
+28	14  10	10	59  58	57	A	
+32	16  10	11	58  58	56	B	
+36	15  14	12	59  57	56	A	
 
 >> C3: Did any ambiguities in the scheduler specification make values
 >> in the table uncertain?  If so, what rule did you use to resolve
 >> them?  Does this match the behavior of your scheduler?
 
-	Yes, it is not specified what has to be done in case if more than 1 threads has same priority. In our case, we have chosen to FALLBACK to FCFS if 2 or more threads are having the same priority.
+	Yes, it will be ambiguous, if there comes two thread which have the same priority, as to which thread to run.
 
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
 
-	We haven't reached to this point of the project yet.
+	Outside the the interrupt context, we are only resetting the value of nice. Other functionalities, like checking the priority, changing the recent_cpu are being done inside the interrupt context.
+Though, priority checking is done every 4 ticks, and the recent_cpu is needed to be checked every 100 ticks. So, it will slightly improve the performance, than doing these thing on every tick.
+
 
 ---- RATIONALE ----
 
@@ -245,7 +263,13 @@ ticks   A   B   C   	A   B   C   	to run
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
 
-	We haven't reached to this point of the project yet.
+	Advantage:
+	
+	We used a single linked list, instead of 64 linked list for 64 priorities, so it takes much less space.
+
+	Disadvantages:
+
+	As we have used a single linked list, we have sort it every time, so it takes much more time. In all there is a space-time paradox. 
 
 >> C6: The assignment explains arithmetic for fixed-point math in
 >> detail, but it leaves it open to you to implement it.  Why did you
@@ -254,7 +278,7 @@ ticks   A   B   C   	A   B   C   	to run
 >> type and/or a set of functions or macros to manipulate fixed-point
 >> numbers, why did you do so?  If not, why not?
 
-	We haven't reached to this point of the project yet.
+	As we know that Pintos does not support floating point numbers, so we convert all floating point to integers. In our code, nice and priority are integers but the recent_cpu and load_avg are real numbers, which returns floating point numbers. Therefore we use 17.14 to convert to integers as mentioned in pintos manual.
 
 			   SURVEY QUESTIONS
 			   ================
