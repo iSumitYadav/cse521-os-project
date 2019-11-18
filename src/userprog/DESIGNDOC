@@ -1,5 +1,5 @@
             +--------------------------+
-            |          CS 140          |
+            |          CS 521          |
             | PROJECT 2: USER PROGRAMS |
             |     DESIGN DOCUMENT      |
             +--------------------------+
@@ -42,7 +42,12 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-    We will be using strtok_r() function for tokenizing the string.
+    1. We will be using strtok_r() function for tokenizing the command-line input into individual tokens.
+    2. Push the address of each token from left to right (reverse) order, then push argv and argc.
+    3. To avoid overflowing, we make a check at the number of arguments being passed, if it overflows the stack, we exit.
+    4. We'll be changing *esp = PHYS_BASE to *esp = PHYS_BASE - 12.
+    5. Adding functionality in process_execute() to process multiple arguments.
+
 
 ---- RATIONALE ----
 
@@ -71,14 +76,20 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
+
+    We haven't gave it a proper thought, so, it is yet to implement.
 
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+    We haven't gave it a proper thought, so, it is yet to implement.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -87,8 +98,12 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+    We haven't gave it a proper thought, so, it is yet to implement.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -104,12 +119,16 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+
+    We haven't gave it a proper thought, so, it is yet to implement.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -118,16 +137,24 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
+    We haven't gave it a proper thought, so, it is yet to implement.
+
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+    We haven't gave it a proper thought, so, it is yet to implement.
 
                SURVEY QUESTIONS
                ================
