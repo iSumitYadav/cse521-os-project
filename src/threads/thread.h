@@ -100,6 +100,13 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+
+    int fd;
+    tid_t parent;
+    struct list file_list, child_list;
+
+    struct child_process *cp;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -137,5 +144,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+int is_thread_alive(int process_id);
 
 #endif /* threads/thread.h */
