@@ -23,9 +23,6 @@
 
 
 
-#define MAX_ARGS 3
-#define USER_VADDR_BOTTOM ((void *) 0x08048000)
-
 struct lock filesys_lock;
 
 struct process_file {
@@ -34,12 +31,12 @@ struct process_file {
   struct list_elem elem;
 };
 
-int process_add_file (struct file *f);
+int process_add_file (struct file *file_ptr);
 struct file* process_get_file (int fd);
 
 static void syscall_handler (struct intr_frame *);
 int user_to_kernel_ptr(const void *vaddr);
-void get_arg (struct intr_frame *f, int *arg, int n);
+void get_arg (struct intr_frame *frame, int *arg, int n);
 void check_valid_ptr (const void *vaddr);
 void check_valid_buffer (void* buffer, unsigned size);
 
@@ -50,10 +47,6 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
-void halt (void)
-{
-  shutdown_power_off();
-}
 
 void exit (int status)
 {
@@ -66,157 +59,19 @@ void exit (int status)
   thread_exit();
 }
 
-pid_t exec (const char *cmd_line)
-{
-  pid_t pid = process_execute(cmd_line);
-  struct child_process* cp = get_child_process(pid);
-  ASSERT(cp);
-  // not loaded
-  // while (cp->load == NOT_LOADED)
-  while (cp->load_child == 0)
-    {
-      barrier();
-    }
-  // if (cp->load == LOAD_FAIL
-    // failed loading
-  if (cp->load_child == 2)
-    {
-      return -1; // error
-    }
-  return pid;
-}
-
-int wait (pid_t pid)
-{
-  return process_wait(pid);
-}
-
-bool create (const char *file, unsigned initial_size)
-{
-  lock_acquire(&filesys_lock);
-  bool success = filesys_create(file, initial_size);
-  lock_release(&filesys_lock);
-  return success;
-}
-
-bool remove (const char *file)
-{
-  lock_acquire(&filesys_lock);
-  bool success = filesys_remove(file);
-  lock_release(&filesys_lock);
-  return success;
-}
-
-int open (const char *file)
-{
-  lock_acquire(&filesys_lock);
-  struct file *f = filesys_open(file);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return -1; // error
-    }
-  int fd = process_add_file(f);
-  lock_release(&filesys_lock);
-  return fd;
-}
-
-int filesize (int fd)
-{
-  lock_acquire(&filesys_lock);
-  struct file *f = process_get_file(fd);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return -1; // error
-    }
-  int size = file_length(f);
-  lock_release(&filesys_lock);
-  return size;
-}
-
-int read (int fd, void *buffer, unsigned size)
-{
-  if (fd == STDIN_FILENO)
-    {
-      unsigned i;
-      uint8_t* local_buffer = (uint8_t *) buffer;
-      for (i = 0; i < size; i++)
-	{
-	  local_buffer[i] = input_getc();
-	}
-      return size;
-    }
-  lock_acquire(&filesys_lock);
-  struct file *f = process_get_file(fd);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return -1; // error
-    }
-  int bytes = file_read(f, buffer, size);
-  lock_release(&filesys_lock);
-  return bytes;
-}
-
-int write (int fd, const void *buffer, unsigned size)
-{
-  if (fd == STDOUT_FILENO)
-    {
-      putbuf(buffer, size);
-      return size;
-    }
-  lock_acquire(&filesys_lock);
-  struct file *f = process_get_file(fd);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return -1; // error
-    }
-  int bytes = file_write(f, buffer, size);
-  lock_release(&filesys_lock);
-  return bytes;
-}
-
-void seek (int fd, unsigned position)
-{
-  lock_acquire(&filesys_lock);
-  struct file *f = process_get_file(fd);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return;
-    }
-  file_seek(f, position);
-  lock_release(&filesys_lock);
-}
-
-unsigned tell (int fd)
-{
-  lock_acquire(&filesys_lock);
-  struct file *f = process_get_file(fd);
-  if (!f)
-    {
-      lock_release(&filesys_lock);
-      return -1; // error
-    }
-  off_t offset = file_tell(f);
-  lock_release(&filesys_lock);
-  return offset;
-}
-
-void close (int fd)
-{
-  lock_acquire(&filesys_lock);
-  process_close_file(fd);
-  lock_release(&filesys_lock);
-}
 
 void check_valid_ptr (const void *vaddr)
 {
-  if (!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM)
+  if (!is_user_vaddr(vaddr) || vaddr < ((void *) 0x08048000))
     {
-      exit(-1); // error;
+      // exit(-1); // General Error Given;
+      struct thread *cur = thread_current();
+  if(is_thread_alive(cur->parent))
+    {
+      cur->cp->status_child = -1;
+    }
+  printf ("%s: exit(%d)\n", cur->name, -1);
+  thread_exit();
     }
 }
 
@@ -228,15 +83,22 @@ int user_to_kernel_ptr(const void *vaddr)
   void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
   if (!ptr)
     {
-      exit(-1); // error;
+      // exit(-1); // General Error Given;
+      struct thread *cur = thread_current();
+  if(is_thread_alive(cur->parent))
+    {
+      cur->cp->status_child = -1;
+    }
+  printf ("%s: exit(%d)\n", cur->name, -1);
+  thread_exit();
     }
   return (int) ptr;
 }
 
-int process_add_file (struct file *f)
+int process_add_file (struct file *file_ptr)
 {
   struct process_file *pf = malloc(sizeof(struct process_file));
-  pf->file = f;
+  pf->file = file_ptr;
   pf->fd = thread_current()->fd;
   thread_current()->fd++;
   list_push_back(&thread_current()->file_list, &pf->elem);
@@ -269,15 +131,11 @@ void process_close_file (int fd)
     {
       next = list_next(e);
       struct process_file *pf = list_entry (e, struct process_file, elem);
-      // if (fd == pf->fd || fd == CLOSE_ALL)
-      // close all
       if (fd == pf->fd || fd == -1)
 	{
 	  file_close(pf->file);
 	  list_remove(&pf->elem);
 	  free(pf);
-	  // if (fd != CLOSE_ALL)
-	  // close all
 	  if (fd != -1)
 	    {
 	      return;
@@ -291,7 +149,6 @@ struct child_process* add_child_process (int pid)
 {
   struct child_process* cp = malloc(sizeof(struct child_process));
   cp->pid_child = pid;
-  // cp->load = NOT_LOADED;
   cp->load_child = 0;
   cp->wait_child = false;
   cp->exit_child = false;
@@ -311,9 +168,9 @@ struct child_process* get_child_process (int pid)
         {
           struct child_process *cp = list_entry (e, struct child_process, elem);
           if (pid == cp->pid_child)
-	    {
-	      return cp;
-	    }
+		    {
+		      return cp;
+		    }
         }
   return NULL;
 }
@@ -340,13 +197,13 @@ void remove_child_processes (void)
     }
 }
 
-void get_arg (struct intr_frame *f, int *arg, int n)
+void get_arg (struct intr_frame *frame, int *arg, int n)
 {
   int i;
   int *ptr;
   for (i = 0; i < n; i++)
     {
-      ptr = (int *) f->esp + i + 1;
+      ptr = (int *) frame->esp + i + 1;
       check_valid_ptr((const void *) ptr);
       arg[i] = *ptr;
     }
@@ -364,97 +221,236 @@ void check_valid_buffer (void* buffer, unsigned size)
 }
 
 static void
-syscall_handler (struct intr_frame *f UNUSED) 
+syscall_handler (struct intr_frame *frame UNUSED) 
 {
-  int arg[MAX_ARGS];
-  check_valid_ptr((const void*) f->esp);
-  switch (* (int *) f->esp)
+  int arg[3];
+  check_valid_ptr((const void*) frame->esp);
+  switch (* (int *) frame->esp)
     {
     case SYS_HALT:
       {
-	halt();
+	shutdown_power_off();
 	break;
       }
     case SYS_EXIT:
       {
-	get_arg(f, &arg[0], 1);
-	exit(arg[0]);
-	break;
-      }
-    case SYS_EXEC:
-      {
-	get_arg(f, &arg[0], 1);
-	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-	f->eax = exec((const char *) arg[0]);
-	break;
-      }
-    case SYS_WAIT:
-      {
-	get_arg(f, &arg[0], 1);
-	f->eax = wait(arg[0]);
-	break;
-      }
-    case SYS_CREATE:
-      {
-	get_arg(f, &arg[0], 2);
-	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-	f->eax = create((const char *)arg[0], (unsigned) arg[1]);
+	get_arg(frame, &arg[0], 1);
+	// exit(arg[0]);
+	struct thread *cur = thread_current();
+  if(is_thread_alive(cur->parent))
+    {
+      cur->cp->status_child = arg[0];
+    }
+  printf ("%s: exit(%d)\n", cur->name, arg[0]);
+  thread_exit();
+
 	break;
       }
     case SYS_REMOVE:
       {
-	get_arg(f, &arg[0], 1);
+	get_arg(frame, &arg[0], 1);
 	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-	f->eax = remove((const char *) arg[0]);
+	lock_acquire(&filesys_lock);
+  	bool success = filesys_remove((const char *) arg[0]);
+  	lock_release(&filesys_lock);
+  	frame->eax = success;
 	break;
       }
+
+    case SYS_EXEC:
+      {
+	get_arg(frame, &arg[0], 1);
+	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
+	const char *cmd_line = (const char *) arg[0];
+	pid_t pid = process_execute(cmd_line);
+  	struct child_process* cp = get_child_process(pid);
+  	ASSERT(cp);
+ 
+  	while (cp->load_child == 0)
+    {
+      barrier();
+    }
+
+  	if (cp->load_child == 2)
+    {
+      frame->eax = -1; // General Error Given
+    }
+    else
+    {
+    	frame->eax = pid;
+    }
+
+	break;
+      }
+
+    case SYS_WAIT:
+      {
+	get_arg(frame, &arg[0], 1);
+	frame->eax = process_wait(arg[0]);
+	break;
+      }
+
+    case SYS_CREATE:
+      {
+	get_arg(frame, &arg[0], 2);
+	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
+	lock_acquire(&filesys_lock);
+  	bool success = filesys_create((const char *)arg[0], arg[1]);
+  	lock_release(&filesys_lock);
+  	frame->eax = success;
+	break;
+      }
+
     case SYS_OPEN:
       {
-	get_arg(f, &arg[0], 1);
+	get_arg(frame, &arg[0], 1);
 	arg[0] = user_to_kernel_ptr((const void *) arg[0]);
-	f->eax = open((const char *) arg[0]);
-	break;
-      }
-    case SYS_FILESIZE:
-      {
-	get_arg(f, &arg[0], 1);
-	f->eax = filesize(arg[0]);
-	break;
-      }
-    case SYS_READ:
-      {
-	get_arg(f, &arg[0], 3);
-	check_valid_buffer((void *) arg[1], (unsigned) arg[2]);
-	arg[1] = user_to_kernel_ptr((const void *) arg[1]);
-	f->eax = read(arg[0], (void *) arg[1], (unsigned) arg[2]);
-	break;
-      }
-    case SYS_WRITE:
-      {
-	get_arg(f, &arg[0], 3);
-	check_valid_buffer((void *) arg[1], (unsigned) arg[2]);
-	arg[1] = user_to_kernel_ptr((const void *) arg[1]);
-	f->eax = write(arg[0], (const void *) arg[1],
-		       (unsigned) arg[2]);
-	break;
-      }
-    case SYS_SEEK:
-      {
-	get_arg(f, &arg[0], 2);
-	seek(arg[0], (unsigned) arg[1]);
-	break;
-      }
-    case SYS_TELL:
-      {
-	get_arg(f, &arg[0], 1);
-	f->eax = tell(arg[0]);
+	lock_acquire(&filesys_lock);
+  	struct file *file_temp = filesys_open((const char *) arg[0]);
+  	if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+      frame->eax = -1; // General Error Given
+    }
+    else
+    {
+  	int fd = process_add_file(file_temp);
+  	lock_release(&filesys_lock);
+  	frame->eax = fd;
+  	}
 	break;
       }
     case SYS_CLOSE:
       {
-	get_arg(f, &arg[0], 1);
-	close(arg[0]);
+	get_arg(frame, &arg[0], 1);
+	lock_acquire(&filesys_lock);
+  process_close_file(arg[0]);
+  lock_release(&filesys_lock);
 	break;
       }
+    case SYS_FILESIZE:
+      {
+	get_arg(frame, &arg[0], 1);
+	lock_acquire(&filesys_lock);
+  struct file *file_temp = process_get_file(arg[0]);
+  if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+      frame->eax = -1; // General Error Given
+    }
+    else
+    {
+  int size = file_length(file_temp);
+  lock_release(&filesys_lock);
+  frame->eax = size;
+  	}
+	break;
+      }
+
+    case SYS_READ:
+      {
+	get_arg(frame, &arg[0], 3);
+	unsigned i;
+  char* local_buffer = (char *) arg[1];
+  for (i = 0; i < arg[2]; i++)
+    {
+      check_valid_ptr((const void*) local_buffer);
+      local_buffer++;
+    }
+	arg[1] = user_to_kernel_ptr((const void *) arg[1]);
+	if (arg[0] == STDIN_FILENO)
+    {
+      unsigned i;
+      uint8_t* local_buffer = (uint8_t *) arg[1];
+      for (i = 0; i < arg[2]; i++)
+	{
+	  local_buffer[i] = input_getc();
+	}
+      frame->eax = arg[2];
+    }
+    else
+    {
+  lock_acquire(&filesys_lock);
+  struct file *file_temp = process_get_file(arg[0]);
+  if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+      frame->eax = -1; // General Error Given
+    }
+    else
+    {
+  int bytes = file_read(file_temp, arg[1], arg[2]);
+  lock_release(&filesys_lock);
+  frame->eax = bytes;
+	}
+	}
+	break;
+      }
+
+    case SYS_WRITE:
+      {
+	get_arg(frame, &arg[0], 3);
+	unsigned i;
+  char* local_buffer = (char *) arg[1];
+  for (i = 0; i < arg[2]; i++)
+    {
+      check_valid_ptr((const void*) local_buffer);
+      local_buffer++;
+    }
+	arg[1] = user_to_kernel_ptr((const void *) arg[1]);
+	if (arg[0] == STDOUT_FILENO)
+    {
+      putbuf(arg[1], arg[2]);
+      frame->eax = arg[2];
+    }
+    else
+    {
+  lock_acquire(&filesys_lock);
+  struct file *file_temp = process_get_file(arg[0]);
+  if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+      frame->eax = -1; // General Error Given
+    }
+    else
+    {
+  int bytes = file_write(file_temp, arg[1], arg[2]);
+  lock_release(&filesys_lock);
+  frame->eax = bytes;
+	}
+	}
+	break;
+      }
+
+    case SYS_SEEK:
+      {
+	get_arg(frame, &arg[0], 2);
+	lock_acquire(&filesys_lock);
+  struct file *file_temp = process_get_file(arg[0]);
+  if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+    }
+  file_seek(file_temp, arg[1]);
+  lock_release(&filesys_lock);
+	break;
+      }
+
+    case SYS_TELL:
+      {
+	get_arg(frame, &arg[0], 1);
+	lock_acquire(&filesys_lock);
+  struct file *file_temp = process_get_file(arg[0]);
+  if (!file_temp)
+    {
+      lock_release(&filesys_lock);
+      frame->eax = -1; // General Error Given
+    }
+  off_t offset = file_tell(file_temp);
+  lock_release(&filesys_lock);
+  return offset;
+	break;
+      }
+
     }
 }
