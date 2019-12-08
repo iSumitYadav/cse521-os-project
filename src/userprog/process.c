@@ -185,7 +185,7 @@ process_activate (void)
      interrupts. */
   tss_update ();
 }
-
+
 /* We load ELF binaries.  The following definitions are taken
    from the ELF specification, [ELF1], more-or-less verbatim.  */
 
@@ -368,7 +368,7 @@ bool load(const char *file_name, void (**eip) (void), void **esp, char **save_pt
   file_close (file);
   return success;
 }
-
+
 /* load() helpers. */
 
 static bool install_page (void *upage, void *kpage, bool writable);
@@ -497,7 +497,7 @@ static bool setup_stack(void **esp, const char *file_name, char **save_ptr){
 
   char *token;
   char **argv = malloc(2*sizeof(char *));
-  int argc = 0, argv_size = 2;
+  int argc = 0, argv_size = 4;
 
   // Push args on the stack (argv, argc, fake return address)
   for(token=(char *) file_name; token!=NULL; token=strtok_r(NULL, " ", save_ptr)){
