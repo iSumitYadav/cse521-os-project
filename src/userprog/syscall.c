@@ -47,7 +47,7 @@ void exit(int status){
 		cur->cp->c_status = status;
 	}
 
-	exit(status);
+	printf ("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
 }
 
@@ -63,7 +63,7 @@ int pointer_from_user_to_kernel(const void *vaddr){
 			cur->cp->c_status = -1;
 		}
 
-		exit(-1);
+		printf ("%s: exit(%d)\n", cur->name, -1);
 		thread_exit();
 	}
 
@@ -78,7 +78,7 @@ void check_ptr(const void *vaddr){
 			cur->cp->c_status = -1;
 		}
 
-		exit(-1);
+		printf ("%s: exit(%d)\n", cur->name, -1);
 		thread_exit();
 	}
 }
@@ -190,7 +190,7 @@ static void syscall_handler(struct intr_frame *frame UNUSED) {
 				cur->cp->c_status = arg[0];
 			}
 
-			exit(arg[0]);
+			printf ("%s: exit(%d)\n", cur->name, arg[0]);
 			thread_exit();
 			break;
 		}
