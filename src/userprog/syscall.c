@@ -56,7 +56,7 @@ int pointer_from_user_to_kernel(const void *vaddr){
 
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
 
-	if (!ptr){
+	if(!ptr){
 		struct thread *cur = thread_current();
 
 		if(is_thread_alive(cur->parent)){
@@ -71,7 +71,7 @@ int pointer_from_user_to_kernel(const void *vaddr){
 }
 
 void check_ptr(const void *vaddr){
-	if (!is_user_vaddr(vaddr) || vaddr < ((void *) 0x08048000)){
+	if(!is_user_vaddr(vaddr) || vaddr < ((void *) 0x08048000)){
 		struct thread *cur = thread_current();
 
 		if(is_thread_alive(cur->parent)){
@@ -103,7 +103,7 @@ struct file *process_take_file(int fd){
 	for(elem=list_begin(&t->file_list); elem!=list_end(&t->file_list);elem=list_next(elem)){
 		struct process_file *pf = list_entry(elem, struct process_file, elem);
 
-		if (fd == pf->fd)
+		if(fd == pf->fd)
 			return pf->file;
 		}
 
@@ -127,7 +127,7 @@ void p_file_close(int fd){
 
 			free(pf);
 
-			if (fd != -1){
+			if(fd != -1){
 				return;
 			}
 		}
