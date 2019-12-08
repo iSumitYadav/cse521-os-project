@@ -76,10 +76,8 @@ static void start_process (void *file_name_){
   success = load(file_name, &if_.eip, &if_.esp, &save_ptr);
 
   if(success){
-    // thread_current()->cp->load = LOAD_SUCCESS;
     thread_current()->cp->c_load = 1; // successfully loaded
   }else{
-    // thread_current()->cp->load = LOAD_FAIL;
     thread_current()->cp->c_load = 2; // failed loading
   }
 
@@ -107,47 +105,49 @@ static void start_process (void *file_name_){
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int
-process_wait (tid_t child_tid UNUSED) 
-{
-  struct child_process* cp = take_child_process(child_tid);
+int process_wait(tid_t child_tid UNUSED) {
+  struct child_process *c_process = take_child_process(child_tid);
 
-  if (!cp || cp->c_wait){
+  if(!c_process || c_process->c_wait){
     return -1; // error
   }
 
-  cp->c_wait = true;
-  while (!cp->c_exit){
+  c_process->c_wait = true;
+
+  while (!c_process->c_exit){
     barrier();
   }
 
-  int status = cp->c_status;
-  list_remove(&cp->elem);
-  free(cp);
+  int status = c_process->c_status;
+  list_remove(&c_process->elem);
+  free(c_process);
 
   return status;
 }
 
 /* Free the current process's resources. */
-void process_exit (void){
+void process_exit(void){
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
   // closes all files
   p_file_close(-1); // close all
 
-  // Frees child list
-  struct thread *t = thread_current();
-  struct list_elem *next, *e = list_begin(&t->child_list);
 
-  while (e != list_end (&t->child_list))
-    {
-      next = list_next(e);
-      struct child_process *cp = list_entry (e, struct child_process,elem);
-      list_remove(&cp->elem);
-      free(cp);
-      e = next;
-    }
+  struct thread *t = thread_current();
+
+  struct list_elem *next;
+  struct list_elem *e = list_begin(&t->child_list);
+
+  while(e!=list_end(&t->child_list)){
+    next = list_next(e);
+
+    struct child_process *c_process = list_entry(e, struct child_process, elem);
+    list_remove(&c_process->elem);
+
+    free(c_process);
+    e = next;
+  }
 
   // Set exit value to true in case killed by the kernel
   if(is_thread_alive(cur->parent)){
@@ -250,11 +250,6 @@ struct Elf32_Phdr
 #define PF_X 1          /* Executable. */
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
-
-// Setup the Stack
-#define WORD_SIZE 4
-#define DEFAULT_ARGV 2
-
 
 static bool setup_stack(void **esp, const char *file_name, char **save_ptr);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
@@ -503,8 +498,8 @@ static bool setup_stack(void **esp, const char *file_name, char **save_ptr){
   }
 
   char *token;
-  char **argv = malloc(DEFAULT_ARGV*sizeof(char *));
-  int argc = 0, argv_size = DEFAULT_ARGV;
+  char **argv = malloc(2*sizeof(char *));
+  int argc = 0, argv_size = 2;
 
   // Push args on the stack
   for(token=(char *) file_name; token!=NULL; token=strtok_r(NULL, " ", save_ptr)){
@@ -512,7 +507,7 @@ static bool setup_stack(void **esp, const char *file_name, char **save_ptr){
     *esp -= strlen(token) + 1;
     argv[argc] = *esp;
     argc++;
-    // Resize argv
+
     if (argc >= argv_size){
       argv_size = argv_size * 2;
       argv = realloc(argv, argv_size*sizeof(char *));
@@ -520,28 +515,28 @@ static bool setup_stack(void **esp, const char *file_name, char **save_ptr){
     memcpy(*esp, token, strlen(token) + 1);
   }
   argv[argc] = 0;
-  // Align to word size (4 bytes)
-  int i = (size_t) *esp % WORD_SIZE;
+
+  int i = (size_t) *esp % 4;
   if(i){
     *esp -= i;
     memcpy(*esp, &argv[argc], i);
   }
-  // Push argv[i] for all i
+
   for(int i=argc; i>=0; i--){
     *esp -= sizeof(char *);
     memcpy(*esp, &argv[i], sizeof(char *));
   }
-  // Push argv
+
   token = *esp;
   *esp -= sizeof(char **);
   memcpy(*esp, &token, sizeof(char **));
-  // Push argc
+
   *esp -= sizeof(int);
   memcpy(*esp, &argc, sizeof(int));
-  // Push fake return addr
+
   *esp -= sizeof(void *);
   memcpy(*esp, &argv[argc], sizeof(void *));
-  // Free argv
+
   free(argv);
 
   return success;
