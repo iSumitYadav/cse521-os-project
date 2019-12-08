@@ -24,9 +24,6 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
-// #define MIN_FD 2
-// #define NO_PARENT -1
-
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -497,12 +494,12 @@ init_thread (struct thread *t, const char *name, int priority)
   intr_set_level (old_level);
 
   list_init(&t->file_list);
-  // t->fd = MIN_FD;
+ 
   t->fd = 2; // Minimum value for fd
 
   list_init(&t->child_list);
   t->cp = NULL;
-  // t->parent = NO_PARENT;
+
   t->parent = -1; // Set parent to -1
 }
 

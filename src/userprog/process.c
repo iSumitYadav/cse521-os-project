@@ -23,8 +23,6 @@
 #include "threads/malloc.h"
 #include "userprog/syscall.h"
 
-// Starting Refractoring
-
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp, char **save_ptr);
@@ -149,7 +147,7 @@ void process_exit(void){
     e = next;
   }
 
-  // Set exit value to true in case killed by the kernel
+
   if(is_thread_alive(cur->parent)){
     cur->cp->c_exit = true;
   }
@@ -501,7 +499,7 @@ static bool setup_stack(void **esp, const char *file_name, char **save_ptr){
   char **argv = malloc(2*sizeof(char *));
   int argc = 0, argv_size = 2;
 
-  // Push args on the stack
+  // Push args on the stack (argv, argc, fake return address)
   for(token=(char *) file_name; token!=NULL; token=strtok_r(NULL, " ", save_ptr)){
 
     *esp -= strlen(token) + 1;

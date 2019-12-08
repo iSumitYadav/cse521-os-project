@@ -104,9 +104,8 @@ struct thread
 
     int fd;
     tid_t parent;
-    struct list file_list, child_list;
-
     struct child_process *cp;
+    struct list file_list, child_list;
   };
 
 /* If false (default), use round-robin scheduler.
