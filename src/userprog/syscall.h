@@ -3,31 +3,21 @@
 
 #include "threads/synch.h"
 
-// #define CLOSE_ALL -1
-// #define ERROR -1
-
-// #define NOT_LOADED 0
-// #define LOAD_SUCCESS 1
-// #define LOAD_FAIL 2
-
 struct child_process{
-	bool wait_child;
-	bool exit_child;
+	bool c_wait;
+	bool c_exit;
 
-	int pid_child;
-	int load_child;
-	int status_child;
+	int c_pid;
+	int c_load;
+	int c_status;
 
-	struct lock wait_lock;
+	struct lock lock_wait;
 	struct list_elem elem;
 };
 
 
-void process_close_file(int fd);
-void remove_child_processes(void);
-struct child_process *add_child_process(int pid);
-struct child_process *get_child_process(int pid);
-void remove_child_process(struct child_process *cp);
+void p_file_close(int fd);
+struct child_process *take_child_process(int pid);
 
 
 void syscall_init (void);

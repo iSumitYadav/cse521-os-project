@@ -89,7 +89,9 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
-    We haven't given it a proper thought, so it is yet to implement.
+    In syscall_handler(), initially we will check the validity of stack pointer by confirming that it is between the user's code address and the kernel's virtual address space. We dereference the stack pointer, if it is valid. The stack pointer is used to find the system call, that needs to be run.
+
+    Then we get all the arguments by repeating the above process for incremented pointer. Validity of strings and buffer pointer are also tested for each byte. The user can pass arguments to call the functions and data is returned using eax (interrupt frame register).
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -98,12 +100,12 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
-    We haven't given it a proper thought, so it is yet to implement.
+    Ideally, the inspection of the page table should be almost 2 calls, i.e., between 2 and 4096 bytes.It needs to access virtual memory to find the page number.
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
-    We haven't given it a proper thought, so it is yet to implement.
+    A process looks for another process and checks its pid in the list of its child process list. If there is no process or there is a process already waiting for the parent process, then a general error, -1 is given. Otherwise, the child process gets the control and then parent waits for the child to exit. When it exits, child process is removed from the child process list and the status is returned.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -128,7 +130,7 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
-    We haven't given it a proper thought, so it is yet to implement.
+    exec() creates a new child process struct for the child process in the child process list, and the one time load semaphore is down. When the child process is loaded, the load semaphore is again set to up. The parent process returns -1, if it reads the load value and the load is failed.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -149,12 +151,17 @@ Christopher Sam Roy <croy2@buffalo.edu>
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
-    We haven't given it a proper thought, so it is yet to implement.
+    Advantages:
+- No race condition, as unique file descriptors
+
+    Disadvantages:
+- No overflow
+- Large processes might suffer
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
 
-    We haven't given it a proper thought, so it is yet to implement.
+    We didn't change the default mapping from tid_t to pid_t. This keeps it simple, as there is only one thread in each process. But it will definitely fail in a multi-threaded system. A global pid counter would be helpful in such case.
 
                SURVEY QUESTIONS
                ================

@@ -212,8 +212,15 @@ thread_create (const char *name, int priority,
 
 
   t->parent = thread_tid();
-  struct child_process *cp = add_child_process(t->tid);
-  t->cp = cp;
+  struct child_process* c_process = malloc(sizeof(struct child_process));
+  c_process->c_pid = t->tid;
+  c_process->c_load = 0;
+  c_process->c_wait = false;
+  c_process->c_exit = false;
+  lock_init(&c_process->lock_wait);
+  list_push_back(&thread_current()->child_list,&c_process->elem);
+
+  t->cp = c_process;
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -336,14 +343,14 @@ thread_yield (void)
 void
 thread_foreach (thread_action_func *func, void *aux)
 {
-  struct list_elem *e;
+  struct list_elem *elem;
 
   ASSERT (intr_get_level () == INTR_OFF);
 
-  for (e = list_begin (&all_list); e != list_end (&all_list);
-       e = list_next (e))
+  for (elem = list_begin (&all_list); elem != list_end (&all_list);
+       elem = list_next (elem))
     {
-      struct thread *t = list_entry (e, struct thread, allelem);
+      struct thread *t = list_entry (elem, struct thread, allelem);
       func (t, aux);
     }
 }
@@ -611,10 +618,10 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 int is_thread_alive(int process_id){
-  struct list_elem *e;
+  struct list_elem *elem;
 
-  for(e=list_begin(&all_list); e!=list_end(&all_list); e=list_next(e)){
-    struct thread *t = list_entry (e, struct thread, allelem);
+  for(elem=list_begin(&all_list); elem!=list_end(&all_list); elem=list_next(elem)){
+    struct thread *t = list_entry (elem, struct thread, allelem);
     if(t->tid == process_id){
       return 1;
     }

@@ -77,10 +77,10 @@ static void start_process (void *file_name_){
 
   if(success){
     // thread_current()->cp->load = LOAD_SUCCESS;
-    thread_current()->cp->load_child = 1; // successfully loaded
+    thread_current()->cp->c_load = 1; // successfully loaded
   }else{
     // thread_current()->cp->load = LOAD_FAIL;
-    thread_current()->cp->load_child = 2; // failed loading
+    thread_current()->cp->c_load = 2; // failed loading
   }
 
   /* If load failed, quit. */
@@ -110,25 +110,20 @@ static void start_process (void *file_name_){
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  struct child_process* cp = get_child_process(child_tid);
+  struct child_process* cp = take_child_process(child_tid);
 
-  if (!cp || cp->wait_child){
-    // return ERROR;
+  if (!cp || cp->c_wait){
     return -1; // error
   }
-  // if (cp->wait)
-  //   {
-  //     // return ERROR;
-  //     return -1; // error
-  //   }
 
-  cp->wait_child = true;
-  while (!cp->exit_child){
+  cp->c_wait = true;
+  while (!cp->c_exit){
     barrier();
   }
 
-  int status = cp->status_child;
-  remove_child_process(cp);
+  int status = cp->c_status;
+  list_remove(&cp->elem);
+  free(cp);
 
   return status;
 }
@@ -138,16 +133,25 @@ void process_exit (void){
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
-  // This will close all files
-  // process_close_file(CLOSE_ALL);
-  process_close_file(-1); // close all
+  // closes all files
+  p_file_close(-1); // close all
 
-  // Free child list
-  remove_child_processes();
+  // Frees child list
+  struct thread *t = thread_current();
+  struct list_elem *next, *e = list_begin(&t->child_list);
+
+  while (e != list_end (&t->child_list))
+    {
+      next = list_next(e);
+      struct child_process *cp = list_entry (e, struct child_process,elem);
+      list_remove(&cp->elem);
+      free(cp);
+      e = next;
+    }
 
   // Set exit value to true in case killed by the kernel
   if(is_thread_alive(cur->parent)){
-    cur->cp->exit_child = true;
+    cur->cp->c_exit = true;
   }
 
   /* Destroy the current process's page directory and switch back
